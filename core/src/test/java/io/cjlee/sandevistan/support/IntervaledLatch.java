@@ -24,8 +24,8 @@ public class IntervaledLatch {
         this.countDownLatch = new CountDownLatch(expectCount);
     }
 
-    public void add(Instant instant) {
-        this.instants.add(instant);
+    public void lap() {
+        this.instants.add(Instant.now());
         countDownLatch.countDown();
     }
 
