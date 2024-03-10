@@ -2,35 +2,24 @@ package io.cjlee.sandevistan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.cjlee.sandevistan.support.IntervaledLatch;
 import io.cjlee.sandevistan.support.TestUtils;
-import io.cjlee.sandevistan.support.TimeIntervals;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 class ThrottlerTest {
-    private static final Logger logger = LoggerFactory.getLogger(ThrottlerTest.class);
-
     @Test
-    void immediate() throws Exception {
+    void immediate() {
         int count = 3;
         Duration interval = Duration.ofMillis(1000L);
-        TimeIntervals timeIntervals = new TimeIntervals(interval);
+        IntervaledLatch intervaledLatch = new IntervaledLatch(interval, count);
 
-        CountDownLatch latch = new CountDownLatch(count);
         Throttler throttler = new ScheduledThrottler(interval);
-        Runnable command = () -> {
-            timeIntervals.add(Instant.now());
-            latch.countDown();
-        };
+        Runnable command = () -> intervaledLatch.add(Instant.now());
         TestUtils.repeat(count, () -> throttler.submit(command));
-        latch.await();
 
-        assertThat(latch.getCount()).isZero();
-        assertThat(timeIntervals.intervaled()).isTrue();
+        assertThat(intervaledLatch.intervaled()).isTrue();
     }
 
     @Test
@@ -38,29 +27,22 @@ class ThrottlerTest {
         int count = 2;
         Duration interval = Duration.ofMillis(1000);
         Throttler throttler = new ScheduledThrottler(interval);
-        TimeIntervals timeIntervals = new TimeIntervals(interval);
+        IntervaledLatch intervaledLatch = new IntervaledLatch(interval, count);
 
-        CountDownLatch latch = new CountDownLatch(count);
-
-        Runnable command = () -> {
-            timeIntervals.add(Instant.now());
-            latch.countDown();
-        };
+        Runnable command = () -> intervaledLatch.add(Instant.now());
         Thread.sleep(500L);
         TestUtils.repeat(count, () -> throttler.submit(command));
-        latch.await();
 
-        assertThat(timeIntervals.intervaled()).isTrue();
+        assertThat(intervaledLatch.intervaled()).isTrue();
     }
 
     @Test
-    void takesLong() throws InterruptedException {
+    void takesLong() {
         int count = 5;
         Duration interval = Duration.ofMillis(1000L);
-        TimeIntervals startIntervals = new TimeIntervals(interval);
-        TimeIntervals completeIntervals = new TimeIntervals(interval);
+        IntervaledLatch startIntervals = new IntervaledLatch(interval, count);
+        IntervaledLatch completeIntervals = new IntervaledLatch(interval, count);
 
-        CountDownLatch latch = new CountDownLatch(count);
         Throttler throttler = new ScheduledThrottler(interval);
         Runnable command = () -> {
             try {
@@ -70,13 +52,25 @@ class ThrottlerTest {
                 throw new RuntimeException(e);
             }
             completeIntervals.add(Instant.now());
-            latch.countDown();
         };
         TestUtils.repeat(count, () -> throttler.submit(command));
 
-        latch.await();
-
         assertThat(startIntervals.intervaled()).isTrue();
         assertThat(completeIntervals.intervaled()).isTrue();
+    }
+
+    @Test
+    void submitAndLatelySubmit() throws InterruptedException {
+        Duration interval = Duration.ofMillis(1000L);
+        IntervaledLatch intervaledLatch = new IntervaledLatch(interval, 2);
+
+        Throttler throttler = new ScheduledThrottler(interval);
+        Runnable command = () -> intervaledLatch.add(Instant.now());
+        throttler.submit(command);
+
+        Thread.sleep(1500);
+        throttler.submit(command);
+
+        assertThat(intervaledLatch.intervaled()).isTrue();
     }
 }

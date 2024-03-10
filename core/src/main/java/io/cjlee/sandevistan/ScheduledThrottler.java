@@ -12,9 +12,8 @@ public class ScheduledThrottler implements Throttler {
     private final ExecutorService worker;
 
     private final LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
-    private final ScheduledExecutorService poller = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService poller = Executors.newSingleThreadScheduledExecutor();
     private volatile boolean started = false;
-
 
     public ScheduledThrottler(Duration interval) {
         this(interval, Executors.newFixedThreadPool(2));
@@ -25,33 +24,38 @@ public class ScheduledThrottler implements Throttler {
         this.worker = worker;
     }
 
-    private Runnable scheduleToTake() {
-        return () -> {
-            try {
-                Runnable command = queue.poll(interval.toNanos(), TimeUnit.NANOSECONDS);
-                if (command == null) {
-                    return;
-                }
-                worker.submit(command);
-                poller.schedule(scheduleToTake(), interval.toNanos(), TimeUnit.NANOSECONDS);
-            } catch (InterruptedException e) {
-                throw new IllegalStateException("running interrupted", e);
-            }
-        };
-    }
-
     @Override
     public boolean submit(Runnable command) {
         if (!started) {
-            started = true;
-            poller.submit(scheduleToTake());
+            synchronized (this) {
+                if (!started) {
+                    started = true;
+                    poller.submit(scheduleToPoll());
+                }
+            }
         }
         return queue.offer(command);
     }
 
     @Override
     public void shutdown() {
+        // todo : check if this is enough
         poller.shutdown();
         worker.shutdown();
+    }
+
+    private Runnable scheduleToPoll() {
+        return () -> {
+            try {
+                Runnable command = queue.poll(interval.toNanos(), TimeUnit.NANOSECONDS);
+                poller.schedule(scheduleToPoll(), interval.toNanos(), TimeUnit.NANOSECONDS);
+                if (command == null) {
+                    return;
+                }
+                worker.submit(command);
+            } catch (InterruptedException e) {
+                throw new IllegalStateException("running interrupted", e);
+            }
+        };
     }
 }
