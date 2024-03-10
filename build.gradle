@@ -1,3 +1,9 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
 plugins {
     id 'java'
 }
@@ -5,18 +11,22 @@ plugins {
 group = 'io.cjlee'
 version = '1.0-SNAPSHOT'
 
-repositories {
-    mavenCentral()
-}
+subprojects {
+    apply plugin: 'java'
 
-dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    repositories {
+        mavenCentral()
+    }
 
-    implementation 'ch.qos.logback:logback-classic:1.4.14'
+    dependencies {
+        implementation 'ch.qos.logback:logback-classic:1.4.14'
 
-    testImplementation 'org.assertj:assertj-core:3.24.2"'
-}
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+        testImplementation 'org.assertj:assertj-core:3.24.2'
+    }
 
-test {
-    useJUnitPlatform()
+    test {
+        useJUnitPlatform()
+    }
 }

@@ -1,5 +1,5 @@
 rootProject.name = 'sandevistan'
 
 include 'core'
-include 'proxy'
+//include 'proxy'
 
