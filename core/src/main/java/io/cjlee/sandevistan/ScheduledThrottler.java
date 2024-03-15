@@ -37,6 +37,10 @@ public class ScheduledThrottler implements Throttler {
     public boolean submit(Runnable task) {
         start();
 
+        return submit0(task);
+    }
+
+    private boolean submit0(Runnable task) {
         if (!shutdown) {
             queue.offer(task);
             // Here we double-check whether the throttler shutdown since the task offered.

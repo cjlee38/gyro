@@ -7,7 +7,7 @@ import io.cjlee.sandevistan.support.TestUtils;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
-class ThrottlerTest {
+class ScheduledThrottlerTest {
     @Test
     void immediate() {
         int count = 3;
