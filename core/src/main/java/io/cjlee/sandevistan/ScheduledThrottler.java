@@ -35,14 +35,7 @@ public class ScheduledThrottler implements Throttler {
 
     @Override
     public boolean submit(Runnable task) {
-        if (!started) {
-            synchronized (this) {
-                if (!started) {
-                    started = true;
-                    poller.submit(scheduleToPoll());
-                }
-            }
-        }
+        start();
 
         if (!shutdown) {
             queue.offer(task);
@@ -54,6 +47,17 @@ public class ScheduledThrottler implements Throttler {
             }
         }
         return true;
+    }
+
+    private void start() {
+        if (!started) {
+            synchronized (this) {
+                if (!started) {
+                    started = true;
+                    poller.submit(scheduleToPoll());
+                }
+            }
+        }
     }
 
     @Override
@@ -89,10 +93,9 @@ public class ScheduledThrottler implements Throttler {
                 }
                 Runnable task = queue.poll(interval.toNanos(), TimeUnit.NANOSECONDS);
                 poller.schedule(scheduleToPoll(), interval.toNanos(), TimeUnit.NANOSECONDS);
-                if (task == null) {
-                    return;
+                if (task != null) {
+                    worker.submit(task);
                 }
-                worker.submit(task);
             } catch (InterruptedException e) {
                 throw new IllegalStateException("running interrupted", e);
             }
