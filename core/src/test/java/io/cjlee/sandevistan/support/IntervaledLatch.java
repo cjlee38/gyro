@@ -64,7 +64,13 @@ public class IntervaledLatch {
 
     private void awaitLatch() {
         try {
-            Duration toWait = this.interval.multipliedBy(expectCount * 2L);
+            Duration toWait;
+            if (this.interval.isZero()) {
+                toWait = Duration.ofMillis(1000);
+            } else {
+                toWait = this.interval.multipliedBy(expectCount * 2L);
+            }
+
             boolean awaited = countDownLatch.await(
                     toWait.toNanos(),
                     TimeUnit.NANOSECONDS
