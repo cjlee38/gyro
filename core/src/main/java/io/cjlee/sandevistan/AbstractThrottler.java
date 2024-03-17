@@ -1,5 +1,7 @@
 package io.cjlee.sandevistan;
 
+import io.cjlee.sandevistan.task.DefaultTask;
+import io.cjlee.sandevistan.task.Task;
 import io.cjlee.sandevistan.utils.ThreadUtils;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
@@ -7,28 +9,24 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ScheduledThrottler implements Throttler {
-    private static final Logger logger = LoggerFactory.getLogger(ScheduledThrottler.class);
-
-    private static final Supplier<ExecutorService> DEFAULT_WORKER_SUPPLIER = Executors::newCachedThreadPool;
+// TODO : Guarantee to run after delay (current approximated)
+public abstract class AbstractThrottler implements Throttler {
+    private static final Logger logger = LoggerFactory.getLogger(AbstractThrottler.class);
 
     private final Duration interval;
+
+    private final LinkedBlockingQueue<Task> queue = new LinkedBlockingQueue<>();
+    private final ScheduledExecutorService poller = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService worker;
 
-    private final LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
-    private final ScheduledExecutorService poller = Executors.newSingleThreadScheduledExecutor();
     private volatile boolean started = false;
     private volatile boolean shutdown = false;
+    private volatile boolean terminated = false;
 
-    public ScheduledThrottler(Duration interval) {
-        this(interval, DEFAULT_WORKER_SUPPLIER.get());
-    }
-
-    public ScheduledThrottler(Duration interval, ExecutorService worker) {
+    public AbstractThrottler(Duration interval, ExecutorService worker) {
         this.interval = interval;
         this.worker = worker;
     }
@@ -37,12 +35,8 @@ public class ScheduledThrottler implements Throttler {
     public boolean submit(Runnable task) {
         start();
 
-        return submit0(task);
-    }
-
-    private boolean submit0(Runnable task) {
         if (!shutdown) {
-            queue.offer(task);
+            queue.offer(wrap(task));
             // Here we double-check whether the throttler shutdown since the task offered.
             if (shutdown) {
                 queue.remove(task);
@@ -53,17 +47,41 @@ public class ScheduledThrottler implements Throttler {
         return true;
     }
 
+    protected Task wrap(Runnable runnable) {
+        return new DefaultTask(runnable);
+    }
+
     private void start() {
-        if (!started) {
-            synchronized (this) {
-                if (!started) {
-                    started = true;
-                    poller.submit(scheduleToPoll());
-                }
+        if (started) {
+            return;
+        }
+        synchronized (this) {
+            if (started) {
+                return;
+            }
+            started = true;
+            poller.scheduleWithFixedDelay(this::onInterval, 0, interval.toNanos(), TimeUnit.NANOSECONDS);
+        }
+    }
+
+    protected void onInterval() {
+        long concurrency = concurrency();
+        while (concurrency-- > 0) {
+            Task task = queue.peek();
+            if (task == null) {
+                return;
+            }
+            if (task.runnable()) {
+                task = queue.poll();
+                assert task != null;
+                worker.execute(task);
             }
         }
     }
 
+    protected abstract long concurrency();
+
+    // TODO : current not working as expected. (submitted task not to be ran because of worker shutdown)
     @Override
     public void shutdown(Duration duration) {
         if (duration.isNegative()) {
@@ -77,7 +95,7 @@ public class ScheduledThrottler implements Throttler {
 
         long initiated = System.nanoTime();
         while (initiated < System.nanoTime() + duration.toNanos()) {
-            if (!queue.isEmpty()) {
+            if (!queue.isEmpty() || !terminated) {
                 ThreadUtils.trySleep(Duration.ofMillis(50L));
                 continue;
             }
@@ -86,23 +104,7 @@ public class ScheduledThrottler implements Throttler {
             worker.shutdown();
             break;
         }
-    }
-
-    private Runnable scheduleToPoll() {
-        return () -> {
-            try {
-                if (shutdown && queue.isEmpty()) {
-                    logger.info("stop to polling because of shutdown");
-                    return;
-                }
-                Runnable task = queue.poll(interval.toNanos(), TimeUnit.NANOSECONDS);
-                poller.schedule(scheduleToPoll(), interval.toNanos(), TimeUnit.NANOSECONDS);
-                if (task != null) {
-                    worker.submit(task);
-                }
-            } catch (InterruptedException e) {
-                throw new IllegalStateException("running interrupted", e);
-            }
-        };
+        worker.shutdownNow();
+        poller.shutdownNow();
     }
 }

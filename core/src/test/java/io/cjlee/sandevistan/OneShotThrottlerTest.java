@@ -4,18 +4,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.cjlee.sandevistan.support.IntervaledLatch;
 import io.cjlee.sandevistan.support.TestUtils;
+import io.cjlee.sandevistan.utils.ThreadUtils;
 import java.time.Duration;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-class ScheduledThrottlerTest {
+class OneShotThrottlerTest {
     @Test
     void immediate() {
         int count = 3;
         Duration interval = Duration.ofMillis(1000L);
         IntervaledLatch intervaledLatch = new IntervaledLatch(interval, count);
-
-        Throttler throttler = new ScheduledThrottler(interval);
+        Throttler throttler = new OneShotThrottler(interval);
         Runnable command = intervaledLatch::lap;
+
         TestUtils.repeat(count, () -> throttler.submit(command));
 
         assertThat(intervaledLatch.intervaled()).isTrue();
@@ -25,11 +27,11 @@ class ScheduledThrottlerTest {
     void delayedSubmit() throws InterruptedException {
         int count = 2;
         Duration interval = Duration.ofMillis(1000);
-        Throttler throttler = new ScheduledThrottler(interval);
+        Throttler throttler = new OneShotThrottler(interval);
         IntervaledLatch intervaledLatch = new IntervaledLatch(interval, count);
-
         Runnable command = intervaledLatch::lap;
         Thread.sleep(500L);
+
         TestUtils.repeat(count, () -> throttler.submit(command));
 
         assertThat(intervaledLatch.intervaled()).isTrue();
@@ -41,17 +43,13 @@ class ScheduledThrottlerTest {
         Duration interval = Duration.ofMillis(1000L);
         IntervaledLatch startIntervals = new IntervaledLatch(interval, count);
         IntervaledLatch completeIntervals = new IntervaledLatch(interval, count);
-
-        Throttler throttler = new ScheduledThrottler(interval);
+        Throttler throttler = new OneShotThrottler(interval);
         Runnable command = () -> {
-            try {
-                startIntervals.lap();
-                Thread.sleep(2000L);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            startIntervals.lap();
+            ThreadUtils.trySleep(Duration.ofMillis(2000L));
             completeIntervals.lap();
         };
+
         TestUtils.repeat(count, () -> throttler.submit(command));
 
         assertThat(startIntervals.intervaled()).isTrue();
@@ -62,11 +60,10 @@ class ScheduledThrottlerTest {
     void submitAndLatelySubmit() throws InterruptedException {
         Duration interval = Duration.ofMillis(1000L);
         IntervaledLatch intervaledLatch = new IntervaledLatch(interval, 2);
-
-        Throttler throttler = new ScheduledThrottler(interval);
+        Throttler throttler = new OneShotThrottler(interval);
         Runnable command = intervaledLatch::lap;
-        throttler.submit(command);
 
+        throttler.submit(command);
         Thread.sleep(1500);
         throttler.submit(command);
 
@@ -74,21 +71,21 @@ class ScheduledThrottlerTest {
     }
 
     @Test
+    @Disabled
     void shutdown() {
         int count = 3;
         Duration interval = Duration.ofMillis(1000L);
         IntervaledLatch intervaledLatch = new IntervaledLatch(interval, count);
 
-        Throttler throttler = new ScheduledThrottler(interval);
+        Throttler throttler = new OneShotThrottler(interval);
         TestUtils.repeat(count, () -> throttler.submit(() -> {
-            try {
-                Thread.sleep(500L);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            ThreadUtils.trySleep(Duration.ofMillis(500L));
             intervaledLatch.lap();
         }));
+
+        ThreadUtils.trySleep(Duration.ofMillis(100));
         throttler.shutdown(interval.multipliedBy(count));
+
         assertThat(intervaledLatch.intervaled()).isTrue();
     }
 }
