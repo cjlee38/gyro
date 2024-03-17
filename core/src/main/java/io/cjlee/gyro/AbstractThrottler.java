@@ -1,8 +1,8 @@
-package io.cjlee.sandevistan;
+package io.cjlee.gyro;
 
-import io.cjlee.sandevistan.task.DefaultTask;
-import io.cjlee.sandevistan.task.Task;
-import io.cjlee.sandevistan.utils.ThreadUtils;
+import io.cjlee.gyro.task.DefaultTask;
+import io.cjlee.gyro.task.Task;
+import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

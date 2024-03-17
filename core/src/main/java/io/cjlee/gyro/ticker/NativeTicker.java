@@ -1,4 +1,4 @@
-package io.cjlee.sandevistan.ticker;
+package io.cjlee.gyro.ticker;
 
 public class NativeTicker implements Ticker {
     @Override

@@ -1,4 +1,4 @@
-package io.cjlee.sandevistan.utils;
+package io.cjlee.gyro.utils;
 
 import java.time.Duration;
 

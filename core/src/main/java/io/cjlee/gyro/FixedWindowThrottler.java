@@ -1,4 +1,4 @@
-package io.cjlee.sandevistan;
+package io.cjlee.gyro;
 
 public class FixedWindowThrottler {
     // TODO : implement this

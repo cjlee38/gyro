@@ -1,4 +1,4 @@
-package io.cjlee.sandevistan.task;
+package io.cjlee.gyro.task;
 
 public class DefaultTask implements Task {
     private final Runnable runnable;

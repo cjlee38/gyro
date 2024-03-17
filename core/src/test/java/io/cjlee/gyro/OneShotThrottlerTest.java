@@ -1,10 +1,10 @@
-package io.cjlee.sandevistan;
+package io.cjlee.gyro;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.cjlee.sandevistan.support.IntervaledLatch;
-import io.cjlee.sandevistan.support.TestUtils;
-import io.cjlee.sandevistan.utils.ThreadUtils;
+import io.cjlee.gyro.support.IntervaledLatch;
+import io.cjlee.gyro.support.TestUtils;
+import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

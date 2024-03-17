@@ -1,4 +1,4 @@
-package io.cjlee.sandevistan.support;
+package io.cjlee.gyro.support;
 
 import java.time.Duration;
 import java.util.concurrent.Executors;

@@ -1,4 +1,4 @@
-package io.cjlee.sandevistan.ticker;
+package io.cjlee.gyro.ticker;
 
 public interface Ticker {
     long now();
