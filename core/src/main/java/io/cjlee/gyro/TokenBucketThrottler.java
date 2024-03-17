@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TokenBucketThrottler extends AbstractThrottler {
+public class TokenBucketThrottler extends AbstractThrottler implements Throttler {
 
     private static final Logger logger = LoggerFactory.getLogger(TokenBucketThrottler.class);
 

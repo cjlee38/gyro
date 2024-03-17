@@ -15,7 +15,7 @@ class OneShotThrottlerTest {
         int count = 3;
         Duration interval = Duration.ofMillis(1000L);
         IntervaledLatch intervaledLatch = new IntervaledLatch(interval, count);
-        Throttler throttler = new OneShotThrottler(interval);
+        Throttler throttler = Throttlers.oneShot(interval);
         Runnable command = intervaledLatch::lap;
 
         TestUtils.repeat(count, () -> throttler.submit(command));
@@ -27,7 +27,7 @@ class OneShotThrottlerTest {
     void delayedSubmit() throws InterruptedException {
         int count = 2;
         Duration interval = Duration.ofMillis(1000);
-        Throttler throttler = new OneShotThrottler(interval);
+        Throttler throttler = Throttlers.oneShot(interval);
         IntervaledLatch intervaledLatch = new IntervaledLatch(interval, count);
         Runnable command = intervaledLatch::lap;
         Thread.sleep(500L);
@@ -43,7 +43,7 @@ class OneShotThrottlerTest {
         Duration interval = Duration.ofMillis(1000L);
         IntervaledLatch startIntervals = new IntervaledLatch(interval, count);
         IntervaledLatch completeIntervals = new IntervaledLatch(interval, count);
-        Throttler throttler = new OneShotThrottler(interval);
+        Throttler throttler = Throttlers.oneShot(interval);
         Runnable command = () -> {
             startIntervals.lap();
             ThreadUtils.trySleep(Duration.ofMillis(2000L));
@@ -60,7 +60,7 @@ class OneShotThrottlerTest {
     void submitAndLatelySubmit() throws InterruptedException {
         Duration interval = Duration.ofMillis(1000L);
         IntervaledLatch intervaledLatch = new IntervaledLatch(interval, 2);
-        Throttler throttler = new OneShotThrottler(interval);
+        Throttler throttler = Throttlers.oneShot(interval);
         Runnable command = intervaledLatch::lap;
 
         throttler.submit(command);
@@ -77,7 +77,7 @@ class OneShotThrottlerTest {
         Duration interval = Duration.ofMillis(1000L);
         IntervaledLatch intervaledLatch = new IntervaledLatch(interval, count);
 
-        Throttler throttler = new OneShotThrottler(interval);
+        Throttler throttler = Throttlers.oneShot(interval);
         TestUtils.repeat(count, () -> throttler.submit(() -> {
             ThreadUtils.trySleep(Duration.ofMillis(500L));
             intervaledLatch.lap();

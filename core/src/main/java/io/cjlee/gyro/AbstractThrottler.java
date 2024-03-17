@@ -18,7 +18,7 @@ public abstract class AbstractThrottler implements Throttler {
 
     private final Duration interval;
 
-    private final LinkedBlockingQueue<Task> queue = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<Task> queue = new LinkedBlockingQueue<>(); // TODO : replace this to faster one
     private final ScheduledExecutorService poller = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService worker;
 
@@ -35,20 +35,7 @@ public abstract class AbstractThrottler implements Throttler {
     public boolean submit(Runnable task) {
         start();
 
-        if (!shutdown) {
-            queue.offer(wrap(task));
-            // Here we double-check whether the throttler shutdown since the task offered.
-            if (shutdown) {
-                queue.remove(task);
-                logger.info("Submitted task rejected because of shutdown");
-                return false;
-            }
-        }
-        return true;
-    }
-
-    protected Task wrap(Runnable runnable) {
-        return new DefaultTask(runnable);
+        return submit0(task);
     }
 
     private void start() {
@@ -81,7 +68,24 @@ public abstract class AbstractThrottler implements Throttler {
 
     protected abstract long concurrency();
 
-    // TODO : current not working as expected. (submitted task not to be ran because of worker shutdown)
+    private boolean submit0(Runnable task) {
+        if (!shutdown) {
+            queue.offer(wrap(task));
+            // Here we double-check whether the throttler shutdown since the task offered.
+            if (shutdown) {
+                queue.remove(task);
+                logger.info("Submitted task rejected because of shutdown");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    protected Task wrap(Runnable runnable) {
+        return new DefaultTask(runnable);
+    }
+
+    // TODO : current not working as expected. (submitted task not to be ran because of `worker` shutdown)
     @Override
     public void shutdown(Duration duration) {
         if (duration.isNegative()) {
