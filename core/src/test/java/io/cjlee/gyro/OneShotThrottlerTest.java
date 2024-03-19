@@ -6,7 +6,8 @@ import io.cjlee.gyro.support.IntervaledLatch;
 import io.cjlee.gyro.support.TestUtils;
 import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
-import org.junit.jupiter.api.Disabled;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
 class OneShotThrottlerTest {
@@ -71,7 +72,6 @@ class OneShotThrottlerTest {
     }
 
     @Test
-    @Disabled
     void shutdown() {
         int count = 3;
         Duration interval = Duration.ofMillis(1000L);
@@ -83,9 +83,46 @@ class OneShotThrottlerTest {
             intervaledLatch.lap();
         }));
 
-        ThreadUtils.trySleep(Duration.ofMillis(100));
+        ThreadUtils.trySleep(Duration.ofMillis(100)); // to ensure all tasks to be submitted
         throttler.shutdown(interval.multipliedBy(count));
 
         assertThat(intervaledLatch.intervaled()).isTrue();
+    }
+
+    @Test
+    void shutdownSubmitButReject() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicLong check = new AtomicLong(0);
+        Throttler throttler = Throttlers.oneShot(Duration.ofMillis(1000L));
+
+        throttler.submit(() -> {
+            ThreadUtils.trySleep(Duration.ofMillis(500L));
+            check.compareAndSet(0, 1);
+            latch.countDown();
+        });
+        throttler.shutdown(Duration.ofMillis(1000L));
+        boolean submitted = throttler.submit(() -> check.compareAndSet(1, 2));
+
+        latch.await();
+        assertThat(submitted).isFalse();
+        assertThat(check.get()).isOne();
+    }
+
+    @Test
+    void shutdownNow() {
+//        int count = 3;
+//        Duration interval = Duration.ofMillis(1000L);
+//        IntervaledLatch intervaledLatch = new IntervaledLatch(interval, count);
+//
+//        Throttler throttler = Throttlers.oneShot(interval);
+//        TestUtils.repeat(count, () -> throttler.submit(() -> {
+//            ThreadUtils.trySleep(Duration.ofMillis(500L));
+//            intervaledLatch.lap();
+//        }));
+//
+//        ThreadUtils.trySleep(Duration.ofMillis(100));
+//        throttler.shutdown(interval.multipliedBy(count));
+//
+//        assertThat(intervaledLatch.intervaled()).isTrue();
     }
 }

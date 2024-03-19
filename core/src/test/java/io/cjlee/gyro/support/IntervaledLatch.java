@@ -28,7 +28,7 @@ public class IntervaledLatch {
     public void lap() {
         this.instants.add(Instant.now());
         countDownLatch.countDown();
-        logger.debug("lap");
+        logger.debug("lap" + (expectCount - countDownLatch.getCount()));
     }
 
     public List<Instant> instants() {
@@ -57,7 +57,6 @@ public class IntervaledLatch {
         }
 
         boolean isSuccess = true;
-
         for (int i = start; i <= end - 1; i++) {
             Instant current = instants.get(i);
             Instant next = instants.get(i + 1);
