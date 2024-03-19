@@ -1,5 +1,6 @@
 rootProject.name = 'gyro'
 
 include 'gyro-core'
-//include 'proxy'
+include 'gyro-spring'
+//include 'gyro-proxy'
 
