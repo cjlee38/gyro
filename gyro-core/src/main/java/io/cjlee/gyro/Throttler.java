@@ -2,9 +2,13 @@ package io.cjlee.gyro;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 public interface Throttler {
-    boolean submit(Runnable task); // TODO : return Future instead of boolean
+    Future<?> submit(Runnable task);
+
+    <T> Future<T> submit(Callable<T> task);
 
     void shutdown(Duration duration);
 

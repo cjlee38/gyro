@@ -7,6 +7,7 @@ import io.cjlee.gyro.support.TestUtils;
 import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
@@ -101,10 +102,10 @@ class OneShotThrottlerTest {
             latch.countDown();
         });
         throttler.shutdown(Duration.ofMillis(1000L));
-        boolean submitted = throttler.submit(() -> check.compareAndSet(1, 2));
+        Future<Boolean> future = throttler.submit(() -> check.compareAndSet(1, 2));
 
         latch.await();
-        assertThat(submitted).isFalse();
+        assertThat(future.isDone()).isFalse();
         assertThat(check.get()).isOne();
     }
 

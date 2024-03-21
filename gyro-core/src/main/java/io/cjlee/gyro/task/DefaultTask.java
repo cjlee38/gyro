@@ -1,15 +1,14 @@
 package io.cjlee.gyro.task;
 
-public class DefaultTask implements Task {
-    private final Runnable runnable;
+import java.util.concurrent.Callable;
 
+public class DefaultTask<T> extends FutureTask<T> implements Task {
     public DefaultTask(Runnable runnable) {
-        this.runnable = runnable;
+        super(runnable, null);
     }
 
-    @Override
-    public void run() {
-        runnable.run();
+    public DefaultTask(Callable<T> callable) {
+        super(callable);
     }
 
     @Override

@@ -1,7 +1,7 @@
 package io.cjlee.gyro;
 
 import io.cjlee.gyro.task.DefaultTask;
-import io.cjlee.gyro.task.Task;
+import io.cjlee.gyro.task.FutureTask;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
@@ -14,7 +14,7 @@ public class TokenBucketThrottler extends AbstractThrottler implements Throttler
 
     private final long capacity;
     private final long replenishAmount;
-    private final AtomicLong token; // AtomicLong could be bottl-neck in case of contention.
+    private final AtomicLong token; // AtomicLong can be a bottleneck in case of contention.
 
     public TokenBucketThrottler(long capacity, long replenishAmount, Duration replenishDelay, ExecutorService workers) {
         super(replenishDelay, workers);
@@ -24,8 +24,8 @@ public class TokenBucketThrottler extends AbstractThrottler implements Throttler
     }
 
     @Override
-    protected Task wrap(Runnable runnable) {
-        return new TokenTask(runnable);
+    protected FutureTask<?> wrap(Runnable runnable) {
+        return new TokenTask<>(runnable);
     }
 
     @Override
@@ -43,7 +43,7 @@ public class TokenBucketThrottler extends AbstractThrottler implements Throttler
         return Math.min(this.capacity, token.get());
     }
 
-    private class TokenTask extends DefaultTask {
+    private class TokenTask<T> extends DefaultTask<T> {
         public TokenTask(Runnable runnable) {
             super(runnable);
         }
