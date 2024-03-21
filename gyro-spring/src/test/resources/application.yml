@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: gyro-spring
+
+gyro:
+  throttler:
+    groups:
+      test-oneshot:
+        type: one-shot
+        interval: 1000ms

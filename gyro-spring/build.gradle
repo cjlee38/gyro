@@ -12,6 +12,7 @@ java {
 }
 
 dependencies {
+	implementation project(':gyro-core')
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-aop'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
