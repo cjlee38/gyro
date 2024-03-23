@@ -28,7 +28,7 @@ public class IntervaledLatch {
     public void lap() {
         this.instants.add(Instant.now());
         countDownLatch.countDown();
-        logger.debug("lap" + (expectCount - countDownLatch.getCount()));
+        logger.debug("lap - " + (expectCount - countDownLatch.getCount()));
     }
 
     public List<Instant> instants() {
@@ -38,7 +38,7 @@ public class IntervaledLatch {
     }
 
     public boolean intervaled() {
-        return this.intervaled(Duration.ofMillis(1), 0, expectCount - 1);
+        return this.intervaled(Duration.ofMillis(0), 0, expectCount - 1);
     }
 
     public boolean intervaled(Duration toleration) {

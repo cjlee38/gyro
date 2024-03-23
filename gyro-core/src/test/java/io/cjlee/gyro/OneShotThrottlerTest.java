@@ -55,7 +55,7 @@ class OneShotThrottlerTest {
         TestUtils.repeat(count, () -> throttler.submit(command));
 
         assertThat(startIntervals.intervaled()).isTrue();
-        assertThat(completeIntervals.intervaled()).isTrue();
+        assertThat(completeIntervals.intervaled(Duration.ofMillis(10))).isTrue();
     }
 
     @Test
