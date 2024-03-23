@@ -1,6 +1,6 @@
 package io.cjlee.gyro;
 
-import io.cjlee.gyro.scheduler.ScheduledPoller;
+import io.cjlee.gyro.scheduler.ScheduledScheduler;
 import io.cjlee.gyro.task.DefaultTask;
 import io.cjlee.gyro.task.FutureTask;
 import io.cjlee.gyro.task.Task;
@@ -23,11 +23,10 @@ public abstract class AbstractThrottler implements Throttler {
     private final Duration interval;
 
     private final LinkedBlockingQueue<Task> queue = new LinkedBlockingQueue<>(); // TODO : replace this to faster one
-    private final ScheduledPoller poller = new ScheduledPoller();
+    private final ScheduledScheduler poller = new ScheduledScheduler();
     private final ExecutorService worker;
 
     private final Ticker ticker = new NativeTicker();
-//    private final ThrottlerState state =
 
     private volatile boolean started = false;
     private volatile boolean shutdown = false;
@@ -61,7 +60,7 @@ public abstract class AbstractThrottler implements Throttler {
                 return;
             }
             started = true;
-            poller.execute(this::onInterval);
+            poller.schedule(this::onInterval);
         }
     }
 
