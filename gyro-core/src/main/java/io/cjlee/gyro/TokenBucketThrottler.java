@@ -3,6 +3,7 @@ package io.cjlee.gyro;
 import io.cjlee.gyro.task.DefaultTask;
 import io.cjlee.gyro.task.FutureTask;
 import java.time.Duration;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
@@ -25,7 +26,16 @@ public class TokenBucketThrottler extends AbstractThrottler implements Throttler
 
     @Override
     protected FutureTask<?> wrap(Runnable runnable) {
-        return new TokenTask<>(runnable);
+        TokenTask<Void> task = new TokenTask<>(runnable);
+        task.onPrevious(token::getAndDecrement);
+        return task;
+    }
+
+    @Override
+    protected <T> FutureTask<T> wrap(Callable<T> callable) {
+        TokenTask<T> task = new TokenTask<>(callable);
+        task.onPrevious(token::getAndDecrement);
+        return task;
     }
 
     @Override
@@ -48,15 +58,13 @@ public class TokenBucketThrottler extends AbstractThrottler implements Throttler
             super(runnable);
         }
 
-        @Override
-        public boolean runnable() {
-            return token.get() > 0;
+        public TokenTask(Callable<T> callable) {
+            super(callable);
         }
 
         @Override
-        public void run() {
-            token.decrementAndGet();
-            super.run();
+        public boolean runnable() {
+            return token.get() > 0;
         }
     }
 }
