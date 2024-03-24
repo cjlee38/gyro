@@ -8,9 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestUtils {
-    private static final Logger logger = LoggerFactory.getLogger(TestUtils.class);
-
-    private static final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    private static final Logger log = LoggerFactory.getLogger(TestUtils.class);
+    private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     private TestUtils() {
     }
@@ -22,7 +21,7 @@ public class TestUtils {
 
     public static void repeat(int count, Duration duration, Runnable runnable) {
         for (int i = 0; i < count; i++) {
-            executor.schedule(runnable, duration.multipliedBy(i).toNanos(), TimeUnit.NANOSECONDS);
+            EXECUTOR.schedule(runnable, duration.multipliedBy(i).toNanos(), TimeUnit.NANOSECONDS);
         }
     }
 }

@@ -1,6 +1,5 @@
 package io.cjlee.gyro;
 
-import io.cjlee.gyro.queue.MpscUnboundedTaskQueue;
 import io.cjlee.gyro.queue.TaskQueue;
 import io.cjlee.gyro.scheduler.ScheduledScheduler;
 import io.cjlee.gyro.task.DefaultTask;
@@ -19,11 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class AbstractThrottler implements Throttler {
-    private static final Logger logger = LoggerFactory.getLogger(AbstractThrottler.class);
+    private static final Logger log = LoggerFactory.getLogger(AbstractThrottler.class);
 
     private final Duration interval;
-
-    private final TaskQueue queue = new MpscUnboundedTaskQueue();
+    private final TaskQueue queue;
     private final ScheduledScheduler poller = new ScheduledScheduler();
     private final ExecutorService worker;
 
@@ -33,9 +31,10 @@ public abstract class AbstractThrottler implements Throttler {
     private volatile boolean shutdown = false;
     private volatile boolean terminated = false;
 
-    public AbstractThrottler(Duration interval, ExecutorService worker) {
+    public AbstractThrottler(Duration interval, ExecutorService worker, TaskQueue queue) {
         this.interval = interval;
         this.worker = worker;
+        this.queue = queue;
     }
 
     @Override
@@ -101,13 +100,20 @@ public abstract class AbstractThrottler implements Throttler {
         if (shutdown) {
             return task;
         }
-        queue.offer(task);
+        if (!offerTask(task)) {
+            task.reject();
+            return task;
+        }
         // Here we double-check whether the throttler shutdown since the task offered.
         if (shutdown) {
-            queue.remove(task);
-            logger.info("Submitted task rejected because of shutdown");
+            queue.remove(task); // TODO : in case of already polled, so failed to remove ?
+            log.info("Submitted task rejected because of shutdown");
         }
         return task;
+    }
+
+    private <T> boolean offerTask(FutureTask<T> task) {
+        return queue.offer(task);
     }
 
     protected FutureTask<?> wrap(Runnable runnable) {
@@ -135,7 +141,7 @@ public abstract class AbstractThrottler implements Throttler {
                 ThreadUtils.trySleep(Duration.ofMillis(50L));
                 continue;
             }
-            logger.info("Shutdown underlying poller and workers");
+            log.info("Shutdown underlying poller and workers");
             poller.shutdown();
             worker.shutdown();
             return;

@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class TokenBucketThrottlerTest {
-    private static final Logger logger = LoggerFactory.getLogger(TokenBucketThrottler.class);
+    private static final Logger log = LoggerFactory.getLogger(TokenBucketThrottler.class);
 
     @Test
     void immediate() {

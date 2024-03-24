@@ -1,5 +1,6 @@
 package io.cjlee.gyro;
 
+import io.cjlee.gyro.queue.TaskQueue;
 import io.cjlee.gyro.task.DefaultTask;
 import io.cjlee.gyro.task.FutureTask;
 import java.time.Duration;
@@ -11,14 +12,18 @@ import org.slf4j.LoggerFactory;
 
 public class TokenBucketThrottler extends AbstractThrottler implements Throttler {
 
-    private static final Logger logger = LoggerFactory.getLogger(TokenBucketThrottler.class);
+    private static final Logger log = LoggerFactory.getLogger(TokenBucketThrottler.class);
 
     private final long capacity;
     private final long replenishAmount;
     private final AtomicLong token; // AtomicLong can be a bottleneck in case of contention.
 
-    public TokenBucketThrottler(long capacity, long replenishAmount, Duration replenishDelay, ExecutorService workers) {
-        super(replenishDelay, workers);
+    public TokenBucketThrottler(long capacity,
+                                long replenishAmount,
+                                Duration replenishDelay,
+                                ExecutorService workers,
+                                TaskQueue queue) {
+        super(replenishDelay, workers, queue);
         this.capacity = capacity;
         this.replenishAmount = replenishAmount;
         this.token = new AtomicLong(capacity);

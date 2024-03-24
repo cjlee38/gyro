@@ -1,4 +1,4 @@
 package io.cjlee.gyro.queue;
 
-public abstract class UnboundedTaskQueue implements TaskQueue {
+public interface UnboundedTaskQueue extends TaskQueue {
 }

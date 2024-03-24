@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IntervaledLatch {
-    private static final Logger logger = LoggerFactory.getLogger(IntervaledLatch.class);
+    private static final Logger log = LoggerFactory.getLogger(IntervaledLatch.class);
 
     private final Duration interval;
     private final int expectCount;
@@ -28,7 +28,7 @@ public class IntervaledLatch {
     public void lap() {
         this.instants.add(Instant.now());
         countDownLatch.countDown();
-        logger.debug("lap - " + (expectCount - countDownLatch.getCount()));
+        log.debug("lap - " + (expectCount - countDownLatch.getCount()));
     }
 
     public List<Instant> instants() {
@@ -61,7 +61,7 @@ public class IntervaledLatch {
             Instant current = instants.get(i);
             Instant next = instants.get(i + 1);
             if (current.plus(interval.minus(toleration)).isAfter(next)) {
-                logger.error(
+                log.error(
                         "current = {}({}) <-[{}ms]-> next = {}({})",
                         i, current,
                         current.until(next, ChronoUnit.MILLIS),
@@ -69,7 +69,7 @@ public class IntervaledLatch {
                 );
                 isSuccess = false;
             }
-            logger.info(
+            log.info(
                     "current = {}({}) <-[{}ms]-> next = {}({})",
                     i, current,
                     current.until(next, ChronoUnit.MILLIS),

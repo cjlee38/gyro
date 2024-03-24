@@ -3,19 +3,19 @@ package io.cjlee.gyro.queue;
 import io.cjlee.gyro.task.Task;
 import java.util.List;
 import java.util.Queue;
-import org.jctools.queues.MpscUnboundedArrayQueue;
-import org.jctools.queues.atomic.MpscUnboundedAtomicArrayQueue;
+import org.jctools.queues.MpscArrayQueue;
+import org.jctools.queues.atomic.MpscAtomicArrayQueue;
 
-public class MpscUnboundedTaskQueue implements UnboundedTaskQueue {
+public class MpscBoundedTaskQueue implements BoundedTaskQueue {
+
     private final Queue<Task> queue;
 
-    public MpscUnboundedTaskQueue(int capacity) {
+    public MpscBoundedTaskQueue(int capacity) {
         Queue<Task> queue;
         try {
-            queue = new MpscUnboundedArrayQueue<>(capacity);
+            queue = new MpscArrayQueue<>(capacity);
         } catch (Exception e) {
-            e.printStackTrace();
-            queue = new MpscUnboundedAtomicArrayQueue<>(capacity);
+            queue = new MpscAtomicArrayQueue<>(capacity);
         }
         this.queue = queue;
     }
