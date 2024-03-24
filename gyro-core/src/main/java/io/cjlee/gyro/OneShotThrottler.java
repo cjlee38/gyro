@@ -10,7 +10,7 @@ public class OneShotThrottler extends AbstractThrottler implements Throttler {
     }
 
     @Override
-    protected long concurrency() {
+    protected int concurrency() {
         return 1;
     }
 }

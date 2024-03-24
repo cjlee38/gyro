@@ -21,10 +21,11 @@ public abstract class AbstractThrottler implements Throttler {
     private static final Logger log = LoggerFactory.getLogger(AbstractThrottler.class);
 
     private final Duration interval;
-    private final TaskQueue queue;
-    private final ScheduledScheduler poller = new ScheduledScheduler();
     private final ExecutorService worker;
 
+    /* for internal behaviors */
+    private final TaskQueue queue;
+    private final ScheduledScheduler poller = new ScheduledScheduler();
     private final Ticker ticker = new NativeTicker();
 
     private volatile boolean started = false;
@@ -76,25 +77,25 @@ public abstract class AbstractThrottler implements Throttler {
 
     private void executeSubmitted() {
         long concurrency = concurrency();
-        List<Task> tasksToExecute = new ArrayList<>((int) concurrency);
+        List<Task> tasks = new ArrayList<>((int) concurrency);
         while (concurrency-- > 0) {
             Task task = queue.peek();
             if (task == null) {
                 break;
             }
             if (task.runnable()) {
-                tasksToExecute.add(queue.poll());
+                tasks.add(queue.poll());
             }
         }
-        if (!tasksToExecute.isEmpty()) {
-            tasksToExecute.get(0).onPrevious(() -> poller.schedule(this::onInterval, interval));
-            tasksToExecute.forEach(worker::execute);
+        if (!tasks.isEmpty()) {
+            tasks.get(0).onPrevious(() -> poller.schedule(this::onInterval, interval));
+            tasks.forEach(worker::execute);
         } else {
             worker.execute(() -> poller.schedule(this::onInterval, interval));
         }
     }
 
-    protected abstract long concurrency();
+    protected abstract int concurrency();
 
     private <T> Future<T> submit0(FutureTask<T> task) {
         if (shutdown) {

@@ -6,6 +6,7 @@ import io.cjlee.gyro.task.FutureTask;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,19 +15,19 @@ public class TokenBucketThrottler extends AbstractThrottler implements Throttler
 
     private static final Logger log = LoggerFactory.getLogger(TokenBucketThrottler.class);
 
-    private final long capacity;
-    private final long replenishAmount;
-    private final AtomicLong token; // AtomicLong can be a bottleneck in case of contention.
+    private final int capacity;
+    private final int replenishAmount;
+    private final AtomicInteger token; // AtomicLong can be a bottleneck in case of contention.
 
-    public TokenBucketThrottler(long capacity,
-                                long replenishAmount,
+    public TokenBucketThrottler(int capacity,
+                                int replenishAmount,
                                 Duration replenishDelay,
                                 ExecutorService workers,
                                 TaskQueue queue) {
         super(replenishDelay, workers, queue);
         this.capacity = capacity;
         this.replenishAmount = replenishAmount;
-        this.token = new AtomicLong(capacity);
+        this.token = new AtomicInteger(capacity);
     }
 
     @Override
@@ -54,7 +55,7 @@ public class TokenBucketThrottler extends AbstractThrottler implements Throttler
     }
 
     @Override
-    protected long concurrency() {
+    protected int concurrency() {
         return Math.min(this.capacity, token.get());
     }
 

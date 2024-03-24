@@ -23,14 +23,14 @@ public class Throttlers {
         return new OneShotThrottler(interval, executorService, queue);
     }
 
-    public static Throttler tokenBucket(long capacity,
-                                        long replenishAmount,
+    public static Throttler tokenBucket(int capacity,
+                                        int replenishAmount,
                                         Duration replenishDelay) {
         return tokenBucket(capacity, replenishAmount, replenishDelay, DEFAULT_WORKER_SUPPLIER.get(), DEFAULT_QUEUE_SUPPLIER.apply((int) capacity));
     }
 
-    public static Throttler tokenBucket(long capacity,
-                                        long replenishAmount,
+    public static Throttler tokenBucket(int capacity,
+                                        int replenishAmount,
                                         Duration replenishDelay,
                                         ExecutorService worker,
                                         TaskQueue queue) {

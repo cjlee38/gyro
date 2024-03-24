@@ -5,15 +5,15 @@ import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 
 public class FixedWindowThrottler extends AbstractThrottler implements Throttler {
-    private final long windowSize;
+    private final int windowSize;
 
-    public FixedWindowThrottler(long windowSize, Duration interval, ExecutorService worker, TaskQueue queue) {
+    public FixedWindowThrottler(int windowSize, Duration interval, ExecutorService worker, TaskQueue queue) {
         super(interval, worker, queue);
         this.windowSize = windowSize;
     }
 
     @Override
-    protected long concurrency() {
+    protected int concurrency() {
         return windowSize;
     }
 }

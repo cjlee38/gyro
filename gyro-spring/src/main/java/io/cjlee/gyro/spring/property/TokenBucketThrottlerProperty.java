@@ -7,18 +7,18 @@ import java.util.Map;
 import org.springframework.boot.convert.DurationStyle;
 
 public class TokenBucketThrottlerProperty extends AbstractThrottlerProperty implements ThrottlerProperty {
-    private final long capacity;
-    private final long replenishAmount;
+    private final int capacity;
+    private final int replenishAmount;
     private final Duration replenishDelay;
 
     public TokenBucketThrottlerProperty(String name, Map<String, String> property) {
         this(name,
-                Long.parseLong(property.get("capacity")),
-                Long.parseLong(property.get("replenishAmount")),
+                Integer.parseInt(property.get("capacity")),
+                Integer.parseInt(property.get("replenishAmount")),
                 DurationStyle.detectAndParse(property.get("replenishDelay")));
     }
 
-    public TokenBucketThrottlerProperty(String name, long capacity, long replenishAmount, Duration replenishDelay) {
+    public TokenBucketThrottlerProperty(String name, int capacity, int replenishAmount, Duration replenishDelay) {
         super(name);
         this.capacity = capacity;
         this.replenishAmount = replenishAmount;
