@@ -6,6 +6,7 @@ buildscript {
 
 plugins {
     id 'java'
+    id 'checkstyle'
 }
 
 group = 'io.cjlee'
@@ -13,6 +14,7 @@ version = '1.0-SNAPSHOT'
 
 subprojects {
     apply plugin: 'java'
+    apply plugin: 'checkstyle'
 
     repositories {
         mavenCentral()
@@ -28,5 +30,21 @@ subprojects {
 
     test {
         useJUnitPlatform()
+        dependsOn('checkstyleMain', 'checkstyleTest')
+    }
+
+    compileJava.options.encoding = 'UTF-8'
+    compileTestJava.options.encoding = 'UTF-8'
+
+    tasks.withType(Checkstyle) {
+        reports {
+            xml.required = true
+            html.required = true
+        }
+    }
+
+    checkstyle {
+        configFile = file("${project.rootDir}/checkstyle/checkstyle.xml")
+        configProperties = ["suppressionsXml": "$rootDir/checkstyle/suppressions.xml"]
     }
 }
