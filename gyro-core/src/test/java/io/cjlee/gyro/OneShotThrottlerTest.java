@@ -55,6 +55,7 @@ class OneShotThrottlerTest {
         TestUtils.repeat(count, () -> throttler.submit(command));
 
         assertThat(startIntervals.intervaled()).isTrue();
+        // completeIntervals could not be properly intervaled because of context-switch
         assertThat(completeIntervals.intervaled(Duration.ofMillis(10))).isTrue();
     }
 

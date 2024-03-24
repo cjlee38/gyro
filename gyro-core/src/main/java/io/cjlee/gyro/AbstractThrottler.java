@@ -1,5 +1,7 @@
 package io.cjlee.gyro;
 
+import io.cjlee.gyro.queue.MpscUnboundedTaskQueue;
+import io.cjlee.gyro.queue.TaskQueue;
 import io.cjlee.gyro.scheduler.ScheduledScheduler;
 import io.cjlee.gyro.task.DefaultTask;
 import io.cjlee.gyro.task.FutureTask;
@@ -13,7 +15,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +23,7 @@ public abstract class AbstractThrottler implements Throttler {
 
     private final Duration interval;
 
-    private final LinkedBlockingQueue<Task> queue = new LinkedBlockingQueue<>(); // TODO : replace this to faster one
+    private final TaskQueue queue = new MpscUnboundedTaskQueue();
     private final ScheduledScheduler poller = new ScheduledScheduler();
     private final ExecutorService worker;
 
@@ -144,11 +145,10 @@ public abstract class AbstractThrottler implements Throttler {
 
     @Override
     public List<Runnable> shutdownNow() {
-        List<Runnable> incomplete = new ArrayList<>();
-        queue.drainTo(incomplete);
         poller.shutdownNow();
+        List<Runnable> incomplete = new ArrayList<>(worker.shutdownNow());
+        queue.drainTo(incomplete);
 
-        incomplete.addAll(worker.shutdownNow());
         return incomplete;
     }
 }
