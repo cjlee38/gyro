@@ -5,8 +5,6 @@ import io.cjlee.gyro.scheduler.ScheduledScheduler;
 import io.cjlee.gyro.task.DefaultTask;
 import io.cjlee.gyro.task.FutureTask;
 import io.cjlee.gyro.task.Task;
-import io.cjlee.gyro.ticker.NativeTicker;
-import io.cjlee.gyro.ticker.Ticker;
 import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -25,8 +23,7 @@ public abstract class AbstractThrottler implements Throttler {
 
     /* for internal behaviors */
     private final TaskQueue queue;
-    private final ScheduledScheduler poller = new ScheduledScheduler();
-    private final Ticker ticker = new NativeTicker();
+    private final ScheduledScheduler scheduler = new ScheduledScheduler();
 
     private volatile boolean started = false;
     private volatile boolean shutdown = false;
@@ -61,7 +58,7 @@ public abstract class AbstractThrottler implements Throttler {
                 return;
             }
             started = true;
-            poller.schedule(this::onInterval);
+            scheduler.schedule(this::onInterval);
         }
     }
 
@@ -88,10 +85,10 @@ public abstract class AbstractThrottler implements Throttler {
             }
         }
         if (!tasks.isEmpty()) {
-            tasks.get(0).onPrevious(() -> poller.schedule(this::onInterval, interval));
+            tasks.get(0).onPrevious(() -> scheduler.schedule(this::onInterval, interval));
             tasks.forEach(worker::execute);
         } else {
-            worker.execute(() -> poller.schedule(this::onInterval, interval));
+            worker.execute(() -> scheduler.schedule(this::onInterval, interval));
         }
     }
 
@@ -136,23 +133,25 @@ public abstract class AbstractThrottler implements Throttler {
             return;
         }
 
-        long initiated = ticker.now();
-        while (initiated + duration.toNanos() > ticker.now()) {
-            if (!(queue.isEmpty() && terminated)) {
-                ThreadUtils.trySleep(Duration.ofMillis(50L));
-                continue;
+        scheduler.shutdown(ticker -> {
+            long initiated = ticker.now();
+            while (initiated + duration.toNanos() > ticker.now()) {
+                if (!(queue.isEmpty() && terminated)) {
+                    ThreadUtils.trySleep(Duration.ofMillis(50L));
+                    continue;
+                }
+                log.info("Shutdown underlying poller and workers");
+                worker.shutdown();
+                return;
             }
-            log.info("Shutdown underlying poller and workers");
-            poller.shutdown();
-            worker.shutdown();
-            return;
-        }
-        shutdownNow();
+        });
     }
 
     @Override
     public List<Runnable> shutdownNow() {
-        poller.shutdownNow();
+        terminated = true;
+
+        scheduler.shutdownNow();
         List<Runnable> incomplete = new ArrayList<>(worker.shutdownNow());
         queue.drainTo(incomplete);
 

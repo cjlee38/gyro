@@ -26,7 +26,11 @@ public class Throttlers {
     public static Throttler tokenBucket(int capacity,
                                         int replenishAmount,
                                         Duration replenishDelay) {
-        return tokenBucket(capacity, replenishAmount, replenishDelay, DEFAULT_WORKER_SUPPLIER.get(), DEFAULT_QUEUE_SUPPLIER.apply((int) capacity));
+        return tokenBucket(capacity,
+                replenishAmount,
+                replenishDelay,
+                DEFAULT_WORKER_SUPPLIER.get(),
+                DEFAULT_QUEUE_SUPPLIER.apply(capacity));
     }
 
     public static Throttler tokenBucket(int capacity,

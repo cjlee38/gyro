@@ -1,10 +1,12 @@
 package io.cjlee.gyro.task;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 public class DefaultTask<T> extends FutureTask<T> implements Task {
-    private Runnable previous;
-    private Runnable next;
+    private final List<Runnable> previous = new ArrayList<>();
+    private final List<Runnable> next = new ArrayList<>();
 
     public DefaultTask(Runnable runnable) {
         super(runnable, null);
@@ -21,22 +23,22 @@ public class DefaultTask<T> extends FutureTask<T> implements Task {
 
     @Override
     public void onPrevious(Runnable previous) {
-        this.previous = previous;
+        this.previous.add(previous);
     }
 
     @Override
     public void onNext(Runnable next) {
-        this.next = next;
+        this.next.add(next);
     }
 
     @Override
     public void run() {
-        if (previous != null) {
-            previous.run();
+        if (!previous.isEmpty()) {
+            previous.forEach(Runnable::run);
         }
         super.run();
-        if (next != null) {
-            next.run();
+        if (!next.isEmpty()) {
+            next.forEach(Runnable::run);
         }
     }
 }
