@@ -1,10 +1,11 @@
 package io.cjlee.gyro;
 
 import io.cjlee.gyro.queue.TaskQueue;
-import io.cjlee.gyro.scheduler.ScheduledScheduler;
+import io.cjlee.gyro.scheduler.Scheduler;
 import io.cjlee.gyro.task.DefaultTask;
 import io.cjlee.gyro.task.FutureTask;
 import io.cjlee.gyro.task.Task;
+import io.cjlee.gyro.utils.ListUtils;
 import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -23,30 +24,31 @@ public abstract class AbstractThrottler implements Throttler {
 
     /* for internal behaviors */
     private final TaskQueue queue;
-    private final ScheduledScheduler scheduler = new ScheduledScheduler();
+    private final Scheduler scheduler;
 
     private volatile boolean started = false;
     private volatile boolean shutdown = false;
     private volatile boolean terminated = false;
 
-    public AbstractThrottler(Duration interval, ExecutorService worker, TaskQueue queue) {
+    public AbstractThrottler(Duration interval, ExecutorService worker, TaskQueue queue, Scheduler scheduler) {
         this.interval = interval;
         this.worker = worker;
         this.queue = queue;
+        this.scheduler = scheduler;
     }
 
     @Override
     public Future<?> submit(Runnable task) {
+        Future<?> f = submit0(wrap(task));
         start();
-
-        return submit0(wrap(task));
+        return f;
     }
 
     @Override
     public <T> Future<T> submit(Callable<T> task) {
+        Future<T> f = submit0(wrap(task));
         start();
-
-        return submit0(wrap(task));
+        return f;
     }
 
     private void start() {
@@ -84,12 +86,13 @@ public abstract class AbstractThrottler implements Throttler {
                 tasks.add(queue.poll());
             }
         }
-        if (!tasks.isEmpty()) {
-            tasks.get(0).onPrevious(() -> scheduler.schedule(this::onInterval, interval));
-            tasks.forEach(worker::execute);
-        } else {
+
+        if (tasks.isEmpty()) {
             worker.execute(() -> scheduler.schedule(this::onInterval, interval));
+            return;
         }
+        ListUtils.first(tasks).onPrevious(() -> scheduler.schedule(this::onInterval, interval));
+        tasks.forEach(worker::execute);
     }
 
     protected abstract int concurrency();
@@ -140,7 +143,7 @@ public abstract class AbstractThrottler implements Throttler {
                     ThreadUtils.trySleep(Duration.ofMillis(50L));
                     continue;
                 }
-                log.info("Shutdown underlying poller and workers");
+                log.info("Shutdown underlying scheduler and workers");
                 worker.shutdown();
                 return;
             }

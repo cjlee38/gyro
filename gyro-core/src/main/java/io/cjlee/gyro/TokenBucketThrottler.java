@@ -1,6 +1,7 @@
 package io.cjlee.gyro;
 
 import io.cjlee.gyro.queue.TaskQueue;
+import io.cjlee.gyro.scheduler.Scheduler;
 import io.cjlee.gyro.task.DefaultTask;
 import io.cjlee.gyro.task.FutureTask;
 import java.time.Duration;
@@ -22,8 +23,9 @@ public class TokenBucketThrottler extends AbstractThrottler implements Throttler
                                 int replenishAmount,
                                 Duration replenishDelay,
                                 ExecutorService workers,
-                                TaskQueue queue) {
-        super(replenishDelay, workers, queue);
+                                TaskQueue queue,
+                                Scheduler scheduler) {
+        super(replenishDelay, workers, queue, scheduler);
         this.capacity = capacity;
         this.replenishAmount = replenishAmount;
         this.token = new AtomicInteger(capacity);

@@ -1,5 +1,6 @@
 package io.cjlee.gyro.support;
 
+import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -14,42 +15,41 @@ import org.slf4j.LoggerFactory;
 public class IntervaledLatch {
     private static final Logger log = LoggerFactory.getLogger(IntervaledLatch.class);
 
+    private final VirtualTicker ticker;
     private final Duration interval;
     private final int expectCount;
     private final CountDownLatch countDownLatch;
-    private final List<Instant> instants = Collections.synchronizedList(new ArrayList<>());
+    private final List<Lap> instants = Collections.synchronizedList(new ArrayList<>());
 
-    public IntervaledLatch(Duration interval, int expectCount) {
+    public IntervaledLatch(Duration interval, int expectCount, VirtualTicker ticker) {
         this.interval = interval;
         this.expectCount = expectCount;
         this.countDownLatch = new CountDownLatch(expectCount);
+        this.ticker = ticker;
     }
 
-    public void lap() {
-        this.instants.add(Instant.now());
-        countDownLatch.countDown();
-        log.debug("lap - " + (expectCount - countDownLatch.getCount()));
-    }
-
-    public List<Instant> instants() {
-        awaitLatch();
-
+    public List<Lap> laps() {
         return new ArrayList<>(instants);
     }
 
-    public boolean intervaled() {
-        return this.intervaled(Duration.ofMillis(0), 0, expectCount - 1);
+    public void advance(Duration interval) {
+        Duration advance = interval == null ? this.interval : interval;
+        ticker.advance(advance);
     }
 
-    public boolean intervaled(Duration toleration) {
-        return this.intervaled(toleration, 0, expectCount - 1);
+    public void lap() {
+        Lap lap = new Lap(ticker.now());
+        this.instants.add(lap);
+
+        countDownLatch.countDown();
+        log.debug("lap - ({}, {})", expectCount - countDownLatch.getCount(), lap);
+    }
+
+    public boolean intervaled() {
+        return this.intervaled(0, expectCount - 1);
     }
 
     public boolean intervaled(int start, int end) {
-        return this.intervaled(Duration.ofMillis(1), start, end);
-    }
-
-    public boolean intervaled(Duration toleration, int start, int end) {
         awaitLatch();
 
         if (instants.size() <= 1) {
@@ -58,22 +58,25 @@ public class IntervaledLatch {
 
         boolean isSuccess = true;
         for (int i = start; i <= end - 1; i++) {
-            Instant current = instants.get(i);
-            Instant next = instants.get(i + 1);
-            if (current.plus(interval.minus(toleration)).isAfter(next)) {
+            Lap currentLap = instants.get(i);
+            Instant currentInstant = currentLap.instant();
+            Lap nextLap = instants.get(i + 1);
+            Instant nextInstant = nextLap.instant();
+            if (currentInstant.plus(interval).isAfter(nextInstant)) {
                 log.error(
                         "current = {}({}) <-[{}ms]-> next = {}({})",
-                        i, current,
-                        current.until(next, ChronoUnit.MILLIS),
-                        i + 1, next
+                        i, currentLap,
+                        currentInstant.until(nextInstant, ChronoUnit.MILLIS),
+                        i + 1, nextLap
                 );
                 isSuccess = false;
+                continue;
             }
             log.info(
                     "current = {}({}) <-[{}ms]-> next = {}({})",
-                    i, current,
-                    current.until(next, ChronoUnit.MILLIS),
-                    i + 1, next
+                    i, currentLap,
+                    currentInstant.until(nextInstant, ChronoUnit.MILLIS),
+                    i + 1, nextLap
             );
         }
         return isSuccess;
@@ -98,5 +101,10 @@ public class IntervaledLatch {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public IntervaledLatchAssertion test() {
+        ThreadUtils.trySleep(Duration.ofMillis(50L));
+        return new IntervaledLatchAssertion(this);
     }
 }

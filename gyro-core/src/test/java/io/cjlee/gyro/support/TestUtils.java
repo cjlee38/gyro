@@ -16,7 +16,6 @@ public class TestUtils {
 
     public static void repeat(int count, Runnable runnable) {
         repeat(count, Duration.ZERO, runnable);
-
     }
 
     public static void repeat(int count, Duration duration, Runnable runnable) {

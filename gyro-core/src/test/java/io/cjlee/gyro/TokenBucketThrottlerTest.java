@@ -1,28 +1,33 @@
 package io.cjlee.gyro;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.cjlee.gyro.support.IntervaledLatch;
+import io.cjlee.gyro.support.Lap;
 import io.cjlee.gyro.support.TestUtils;
-import io.cjlee.gyro.utils.ThreadUtils;
+import io.cjlee.gyro.support.VirtualThrottlers;
+import io.cjlee.gyro.support.VirtualTicker;
 import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 class TokenBucketThrottlerTest {
-    private static final Logger log = LoggerFactory.getLogger(TokenBucketThrottler.class);
+    private VirtualTicker ticker;
+
+    @BeforeEach
+    void setUp() {
+        ticker = new VirtualTicker();
+    }
 
     @Test
     void immediate() {
         int capacity = 3;
-        Throttler throttler = Throttlers.tokenBucket(capacity, 1, Duration.ofSeconds(1));
-        IntervaledLatch latch = new IntervaledLatch(Duration.ZERO, capacity);
+        Throttler throttler = VirtualThrottlers.tokenBucket(capacity, 1, Duration.ofSeconds(1), ticker);
+        IntervaledLatch latch = new IntervaledLatch(Duration.ZERO, capacity, ticker);
         Runnable runnable = latch::lap;
 
         TestUtils.repeat(capacity, () -> throttler.submit(runnable));
-
-        latch.intervaled();
+        latch.test()
+                .assertAll(Lap.ofMillis(0), Lap.ofMillis(0), Lap.ofMillis(0))
+                .end();
     }
 
     @Test
@@ -30,13 +35,20 @@ class TokenBucketThrottlerTest {
         int capacity = 3;
         int shot = 6;
         Duration interval = Duration.ofSeconds(1);
-        IntervaledLatch latch = new IntervaledLatch(interval, shot);
-        Throttler throttler = Throttlers.tokenBucket(capacity, 1, interval);
+        IntervaledLatch latch = new IntervaledLatch(interval, shot, ticker);
+        Throttler throttler = VirtualThrottlers.tokenBucket(capacity, 1, interval, ticker);
         Runnable runnable = latch::lap;
 
         TestUtils.repeat(shot, () -> throttler.submit(runnable));
-
-        assertThat(latch.intervaled(2, 5)).isTrue();
+        latch.test()
+                .assertAll(Lap.ofMillis(0), Lap.ofMillis(0), Lap.ofMillis(0))
+                .andAdvance(interval)
+                .assertLast(Lap.ofMillis(1000))
+                .andAdvance(interval)
+                .assertLast(Lap.ofMillis(2000))
+                .andAdvance(interval)
+                .assertLast(Lap.ofMillis(3000))
+                .endOn(2, 5);
     }
 
     @Test
@@ -45,16 +57,23 @@ class TokenBucketThrottlerTest {
         int firstShot = 3;
         int secondShot = 3;
         Duration interval = Duration.ofSeconds(1);
-        Throttler throttler = Throttlers.tokenBucket(capacity, 1, interval);
-        IntervaledLatch latch = new IntervaledLatch(interval, firstShot + secondShot);
+        Throttler throttler = VirtualThrottlers.tokenBucket(capacity, 1, interval, ticker);
+        IntervaledLatch latch = new IntervaledLatch(interval, firstShot + secondShot, ticker);
         Runnable runnable = latch::lap;
 
         TestUtils.repeat(firstShot, () -> throttler.submit(runnable));
-        ThreadUtils.trySleep(Duration.ofSeconds(2));
-        TestUtils.repeat(secondShot, () -> throttler.submit(runnable));
 
-        assertThat(latch.intervaled(2, 3)).isTrue();
-        assertThat(latch.intervaled(4, 5)).isTrue();
+        latch.test()
+                .assertAll(Lap.ofMillis(0), Lap.ofMillis(0), Lap.ofMillis(0))
+                .andAdvance(Duration.ofSeconds(1))
+                .andDoWith(it -> {
+                    it.advance(Duration.ofSeconds(1));
+                    TestUtils.repeat(secondShot, () -> throttler.submit(runnable));
+                })
+                .assertRange(3, 5, Lap.ofMillis(2000), Lap.ofMillis(2000))
+                .andAdvance(Duration.ofSeconds(1))
+                .assertLast(Lap.ofMillis(3000))
+                .endOn(4, 5);
     }
 
     @Test
@@ -62,12 +81,28 @@ class TokenBucketThrottlerTest {
         int capacity = 3;
         int shot = 6;
         Duration interval = Duration.ofSeconds(1);
-        Throttler throttler = Throttlers.tokenBucket(capacity, 1, interval);
-        IntervaledLatch latch = new IntervaledLatch(interval, shot);
+        Throttler throttler = VirtualThrottlers.tokenBucket(capacity, 1, interval, ticker);
+        IntervaledLatch latch = new IntervaledLatch(interval, shot, ticker);
         Runnable runnable = latch::lap;
 
-        TestUtils.repeat(shot, interval, () -> throttler.submit(runnable));
-
-        assertThat(latch.intervaled()).isTrue();
+        throttler.submit(runnable);
+        latch.test()
+                .andDo(() -> throttler.submit(runnable))
+                .andAdvance(interval)
+                .andDo(() -> throttler.submit(runnable))
+                .andAdvance(interval)
+                .andDo(() -> throttler.submit(runnable))
+                .andAdvance(interval)
+                .andDo(() -> throttler.submit(runnable))
+                .andAdvance(interval)
+                .andDo(() -> throttler.submit(runnable))
+                .andAdvance(interval)
+                .assertAll(Lap.ofMillis(0),
+                        Lap.ofMillis(1000),
+                        Lap.ofMillis(2000),
+                        Lap.ofMillis(3000),
+                        Lap.ofMillis(4000),
+                        Lap.ofMillis(5000))
+                .end();
     }
 }

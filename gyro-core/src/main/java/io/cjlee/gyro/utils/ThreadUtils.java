@@ -13,4 +13,11 @@ public class ThreadUtils {
             throw new RuntimeException(e);
         }
     }
+
+    public static void nanoSleep(Duration duration) {
+        long sleepUntil = System.nanoTime() + duration.toNanos();
+        while (System.nanoTime() < sleepUntil) {
+            Thread.yield();
+        }
+    }
 }

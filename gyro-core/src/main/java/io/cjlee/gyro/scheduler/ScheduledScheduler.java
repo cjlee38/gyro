@@ -1,9 +1,7 @@
 package io.cjlee.gyro.scheduler;
 
-import io.cjlee.gyro.ticker.NativeTicker;
 import io.cjlee.gyro.ticker.Ticker;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -11,13 +9,14 @@ import java.util.function.Consumer;
 
 public class ScheduledScheduler implements Scheduler {
     private final ScheduledExecutorService service;
-    private final Ticker ticker = new NativeTicker();
+    private final Ticker ticker;
 
-    public ScheduledScheduler() {
-        this(Executors.newSingleThreadScheduledExecutor());
+    public ScheduledScheduler(Ticker ticker) {
+        this(ticker, Executors.newSingleThreadScheduledExecutor());
     }
 
-    public ScheduledScheduler(ScheduledExecutorService service) {
+    public ScheduledScheduler(Ticker ticker, ScheduledExecutorService service) {
+        this.ticker = ticker;
         this.service = service;
     }
 
