@@ -17,7 +17,8 @@ public class Throttlers {
 
     private static final Supplier<ExecutorService> DEFAULT_WORKER_SUPPLIER = Executors::newCachedThreadPool;
     private static final Function<Integer, TaskQueue> DEFAULT_QUEUE_SUPPLIER = MpscUnboundedTaskQueue::new;
-    private static final Supplier<Scheduler> DEFAULT_SCHEDULER_SUPPLER = () -> new ScheduledScheduler(new NativeTicker());
+    private static final Supplier<Scheduler> DEFAULT_SCHEDULER_SUPPLER =
+            () -> new ScheduledScheduler(new NativeTicker());
 
     public static Throttler oneShot(Duration interval) {
         return oneShot(interval,
@@ -51,6 +52,22 @@ public class Throttlers {
                                         TaskQueue queue,
                                         Scheduler scheduler) {
         return new TokenBucketThrottler(capacity, replenishAmount, replenishDelay, worker, queue, scheduler);
+    }
+
+    public static Throttler fixedWindow(int windowSize, Duration interval) {
+        return fixedWindow(windowSize,
+                interval,
+                DEFAULT_WORKER_SUPPLIER.get(),
+                DEFAULT_QUEUE_SUPPLIER.apply(windowSize),
+                DEFAULT_SCHEDULER_SUPPLER.get());
+    }
+
+    public static Throttler fixedWindow(int windowSize,
+                                        Duration interval,
+                                        ExecutorService worker,
+                                        TaskQueue queue,
+                                        Scheduler scheduler) {
+        return new FixedWindowThrottler(windowSize, interval, worker, queue, scheduler);
     }
 
     public static ThrottlerCustomizer customize() {

@@ -45,8 +45,8 @@ public class LoggingTaskQueue implements TaskQueue {
     }
 
     @Override
-    public void drainTo(List<Runnable> to) {
-        queue.drainTo(to);
-        log.debug("LoggingTaskQueue.drainTo : " + to);
+    public void drainTo(List<Runnable> dest) {
+        queue.drainTo(dest);
+        log.debug("LoggingTaskQueue.drainTo : " + dest);
     }
 }

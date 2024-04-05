@@ -11,8 +11,4 @@ public abstract class FutureTask<T> extends java.util.concurrent.FutureTask<T> i
     public FutureTask(Runnable runnable, T result) {
         super(runnable, result);
     }
-
-    public void reject() {
-        // TODO
-    }
 }

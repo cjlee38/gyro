@@ -3,53 +3,31 @@ package io.cjlee.gyro.queue;
 import io.cjlee.gyro.task.Task;
 import java.util.List;
 import java.util.Queue;
+import org.jctools.queues.MessagePassingQueue;
 import org.jctools.queues.MpscArrayQueue;
 import org.jctools.queues.atomic.MpscAtomicArrayQueue;
 
-public class MpscBoundedTaskQueue implements BoundedTaskQueue {
+public class MpscBoundedTaskQueue extends DelegateQueue implements BoundedTaskQueue {
+    private final MessagePassingQueue<Task> queue;
 
-    private final Queue<Task> queue;
-
+    @SuppressWarnings("unchecked")
     public MpscBoundedTaskQueue(int capacity) {
+        super(load(capacity));
+        this.queue = (MessagePassingQueue<Task>) super.queue;
+    }
+
+    private static Queue<Task> load(int capacity) {
         Queue<Task> queue;
         try {
             queue = new MpscArrayQueue<>(capacity);
         } catch (Exception e) {
             queue = new MpscAtomicArrayQueue<>(capacity);
         }
-        this.queue = queue;
+        return queue;
     }
 
     @Override
-    public boolean isEmpty() {
-        return queue.isEmpty();
-    }
-
-    @Override
-    public Task peek() {
-        return queue.peek();
-    }
-
-    @Override
-    public Task poll() {
-        return queue.poll();
-    }
-
-    @Override
-    public boolean offer(Task task) {
-        return queue.offer(task);
-    }
-
-    @Override
-    public boolean remove(Task task) {
-        return queue.remove(task);
-    }
-
-    @Override
-    public void drainTo(List<Runnable> to) {
-        // TODO : may lead to unexpected result.
-        while (!queue.isEmpty()) {
-            to.add(queue.poll());
-        }
+    public void drainTo(List<Runnable> dest) {
+        this.queue.drain(dest::add);
     }
 }

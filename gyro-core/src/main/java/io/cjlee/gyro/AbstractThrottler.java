@@ -102,12 +102,13 @@ public abstract class AbstractThrottler implements Throttler {
             return task;
         }
         if (!offerTask(task)) {
-            task.reject();
+            task.cancel(false);
             return task;
         }
         // Here we double-check whether the throttler shutdown since the task offered.
         if (shutdown) {
-            queue.remove(task); // TODO : in case of already polled, so failed to remove ?
+            task.cancel(true);
+            queue.remove(task);
             log.info("Submitted task rejected because of shutdown");
         }
         return task;
