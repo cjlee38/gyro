@@ -8,7 +8,7 @@ import org.jctools.queues.MpscUnboundedArrayQueue;
 import org.jctools.queues.atomic.MpscUnboundedAtomicArrayQueue;
 
 public class MpscUnboundedTaskQueue extends DelegateQueue implements UnboundedTaskQueue {
-    private MessagePassingQueue<Task> queue;
+    private final MessagePassingQueue<Task> queue;
 
     @SuppressWarnings("unchecked")
     public MpscUnboundedTaskQueue(int capacity) {
