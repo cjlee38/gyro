@@ -42,4 +42,9 @@ public class ScheduledScheduler implements Scheduler {
     public void shutdownNow() {
         service.shutdownNow();
     }
+
+    @Override
+    public Ticker ticker() {
+        return ticker;
+    }
 }

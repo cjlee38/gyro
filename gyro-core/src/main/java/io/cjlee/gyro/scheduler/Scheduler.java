@@ -12,4 +12,6 @@ public interface Scheduler {
     void shutdown(Consumer<Ticker> condition);
 
     void shutdownNow();
+
+    Ticker ticker();
 }

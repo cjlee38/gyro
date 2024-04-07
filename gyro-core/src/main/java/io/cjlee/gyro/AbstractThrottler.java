@@ -75,24 +75,32 @@ public abstract class AbstractThrottler implements Throttler {
     }
 
     private void executeSubmitted() {
+        Ticker ticker = scheduler.ticker();
         long concurrency = concurrency();
-        List<Task> tasks = new ArrayList<>((int) concurrency);
-        while (concurrency-- > 0) {
-            Task task = queue.peek();
+        boolean nextScheduled = false;
+
+        long started = ticker.now();
+        Duration timeout = this.interval;
+
+        while (concurrency > 0) {
+            Task task = queue.poll(timeout);
             if (task == null) {
                 break;
             }
-            if (task.runnable()) {
-                tasks.add(queue.poll());
+            timeout = timeout.minusNanos(ticker.now() - started);
+            // To ensure interval of execution, add a hook to schedule next `onInterval`
+            if (!nextScheduled) {
+                Duration nextDuration = timeout;
+                task.onPrevious(() -> scheduler.schedule(this::onInterval, nextDuration));
+                nextScheduled = true;
             }
+            worker.execute(task);
+            concurrency--;
         }
-
-        if (tasks.isEmpty()) {
-            worker.execute(() -> scheduler.schedule(this::onInterval, interval));
-            return;
+        // If first is false, it means hook for next schedule is not registered.
+        if (!nextScheduled) {
+            scheduler.schedule(this::onInterval, this.interval);
         }
-        ListUtils.first(tasks).onPrevious(() -> scheduler.schedule(this::onInterval, interval));
-        tasks.forEach(worker::execute);
     }
 
     protected abstract int concurrency();

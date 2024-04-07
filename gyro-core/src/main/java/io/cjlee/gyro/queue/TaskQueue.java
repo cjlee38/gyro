@@ -1,6 +1,7 @@
 package io.cjlee.gyro.queue;
 
 import io.cjlee.gyro.task.Task;
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -26,7 +27,7 @@ public interface TaskQueue {
      * This method does not throw an exception if the queue is empty.
      * @return the next task if it exists, or null otherwise.
      */
-    Task poll();
+    Task poll(Duration timeout);
 
     /**
      * Adds the provided {@link Task} to the end of this {@link TaskQueue}.

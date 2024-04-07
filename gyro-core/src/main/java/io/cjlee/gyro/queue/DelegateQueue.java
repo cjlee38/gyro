@@ -1,6 +1,7 @@
 package io.cjlee.gyro.queue;
 
 import io.cjlee.gyro.task.Task;
+import java.time.Duration;
 import java.util.List;
 import java.util.Queue;
 
@@ -22,8 +23,19 @@ public abstract class DelegateQueue implements TaskQueue {
     }
 
     @Override
-    public Task poll() {
-        return queue.poll();
+    public Task poll(Duration timeout) {
+        // TODO : lead to bad throughput
+        if (timeout.isZero()) {
+            return queue.poll();
+        }
+        long deadline = System.nanoTime() + timeout.toNanos();
+        Task task;
+        while ((task = queue.poll()) == null) {
+            if (deadline <= System.nanoTime()) {
+                return null;
+            }
+        }
+        return task;
     }
 
     @Override

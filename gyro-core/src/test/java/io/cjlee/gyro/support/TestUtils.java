@@ -18,10 +18,29 @@ public class TestUtils {
         repeat(count, Duration.ZERO, runnable);
     }
 
-    public static void repeat(int count, Duration duration, Runnable runnable) {
-        for (int i = 0; i < count; i++) {
-            EXECUTOR.schedule(runnable, duration.multipliedBy(i).toNanos(), TimeUnit.NANOSECONDS);
-        }
+    public static void repeat(int count, Duration interval, Runnable runnable) {
+        EXECUTOR.schedule(new Runnable() {
+            private int remainingRuns = count;
+
+            @Override
+            public void run() {
+                if (remainingRuns-- > 0) {
+                    long startTime = System.nanoTime();
+                    try {
+                        runnable.run();
+                    } finally {
+                        long executionTime = System.nanoTime() - startTime;
+                        long delayForNextRun = interval.toNanos() - executionTime;
+                        if (delayForNextRun < 0) {
+                            // I assume that the given runnable is `throttler.submit`,
+                            // but nevertheless if the execution took longer than the interval, run immediately.
+                            delayForNextRun = 0;
+                        }
+                        EXECUTOR.schedule(this, delayForNextRun, TimeUnit.NANOSECONDS);
+                    }
+                }
+            }
+        }, interval.toNanos(), TimeUnit.NANOSECONDS);
     }
 
     public static void assertSoftly(Runnable runnable) {

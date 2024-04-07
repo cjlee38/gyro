@@ -54,7 +54,7 @@ public class Throttlers {
         return new TokenBucketThrottler(capacity, replenishAmount, replenishDelay, worker, queue, scheduler);
     }
 
-    public static Throttler fixedWindow(int windowSize, Duration interval) {
+    public static BoundedThrottler fixedWindow(int windowSize, Duration interval) {
         return fixedWindow(windowSize,
                 interval,
                 DEFAULT_WORKER_SUPPLIER.get(),
@@ -62,7 +62,7 @@ public class Throttlers {
                 DEFAULT_SCHEDULER_SUPPLER.get());
     }
 
-    public static Throttler fixedWindow(int windowSize,
+    public static BoundedThrottler fixedWindow(int windowSize,
                                         Duration interval,
                                         ExecutorService worker,
                                         TaskQueue queue,
