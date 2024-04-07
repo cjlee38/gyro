@@ -5,8 +5,9 @@ import io.cjlee.gyro.scheduler.Scheduler;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 
-public class FixedWindowThrottler extends AbstractThrottler implements Throttler {
+public class FixedWindowThrottler extends AbstractThrottler implements BoundedThrottler {
     private final int windowSize;
+    private Runnable onDiscard;
 
     public FixedWindowThrottler(int windowSize,
                                 Duration interval,
@@ -20,5 +21,15 @@ public class FixedWindowThrottler extends AbstractThrottler implements Throttler
     @Override
     protected int concurrency() {
         return windowSize;
+    }
+
+    @Override
+    protected Runnable onDiscard() {
+        return this.onDiscard;
+    }
+
+    @Override
+    public void setOnDiscard(Runnable onDiscard) {
+        this.onDiscard = onDiscard;
     }
 }

@@ -5,7 +5,7 @@ import io.cjlee.gyro.scheduler.Scheduler;
 import io.cjlee.gyro.task.DefaultTask;
 import io.cjlee.gyro.task.FutureTask;
 import io.cjlee.gyro.task.Task;
-import io.cjlee.gyro.utils.ListUtils;
+import io.cjlee.gyro.ticker.Ticker;
 import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -102,12 +102,12 @@ public abstract class AbstractThrottler implements Throttler {
             return task;
         }
         if (!offerTask(task)) {
-            task.cancel(false);
+            task.discard(false);
             return task;
         }
         // Here we double-check whether the throttler shutdown since the task offered.
         if (shutdown) {
-            task.cancel(true);
+            task.discard(true);
             queue.remove(task);
             log.info("Submitted task rejected because of shutdown");
         }
@@ -123,7 +123,13 @@ public abstract class AbstractThrottler implements Throttler {
     }
 
     protected <T> FutureTask<T> wrap(Callable<T> callable) {
-        return new DefaultTask<>(callable);
+        DefaultTask<T> task = new DefaultTask<>(callable);
+        task.onDiscarded(onDiscard());
+        return task;
+    }
+
+    protected Runnable onDiscard() {
+        return null;
     }
 
     @Override
