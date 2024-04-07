@@ -2,6 +2,7 @@ package io.cjlee.gyro.support;
 
 import io.cjlee.gyro.queue.TaskQueue;
 import io.cjlee.gyro.task.Task;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -26,7 +27,7 @@ public class LoggingTaskQueue implements TaskQueue {
     }
 
     @Override
-    public Task poll() {
+    public Task poll(Duration timeout) {
         Task task = queue.poll();
         log.debug("LoggingTaskQueue.poll : " + task);
         return task;

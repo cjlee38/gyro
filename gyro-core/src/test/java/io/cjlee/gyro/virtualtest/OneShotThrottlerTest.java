@@ -1,7 +1,9 @@
-package io.cjlee.gyro;
+package io.cjlee.gyro.virtualtest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.cjlee.gyro.Throttler;
+import io.cjlee.gyro.Throttlers;
 import io.cjlee.gyro.support.IntervaledLatch;
 import io.cjlee.gyro.support.Lap;
 import io.cjlee.gyro.support.TestUtils;

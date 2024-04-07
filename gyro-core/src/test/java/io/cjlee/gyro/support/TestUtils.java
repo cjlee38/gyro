@@ -23,4 +23,12 @@ public class TestUtils {
             EXECUTOR.schedule(runnable, duration.multipliedBy(i).toNanos(), TimeUnit.NANOSECONDS);
         }
     }
+
+    public static void assertSoftly(Runnable runnable) {
+        try {
+            runnable.run();
+        } catch (Throwable e) {
+            log.error("Soft assertion failed : ", e);
+        }
+    }
 }

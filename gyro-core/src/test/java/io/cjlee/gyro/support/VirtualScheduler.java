@@ -51,4 +51,9 @@ public class VirtualScheduler implements Scheduler {
     public void shutdownNow() {
         // TODO
     }
+
+    @Override
+    public VirtualTicker ticker() {
+        return ticker;
+    }
 }

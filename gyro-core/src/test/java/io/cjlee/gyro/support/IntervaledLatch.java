@@ -34,11 +34,14 @@ public class IntervaledLatch {
 
     public void advance(Duration interval) {
         Duration advance = interval == null ? this.interval : interval;
-        ticker.advance(advance);
+        if (ticker != null) {
+            ticker.advance(advance);
+        }
     }
 
     public void lap() {
-        Lap lap = new Lap(ticker.now());
+        long nano = ticker != null ? ticker.now() : System.nanoTime();
+        Lap lap = new Lap(nano);
         this.instants.add(lap);
 
         countDownLatch.countDown();
@@ -91,12 +94,9 @@ public class IntervaledLatch {
                 toWait = this.interval.multipliedBy(expectCount * 2L);
             }
 
-            boolean awaited = countDownLatch.await(
-                    toWait.toNanos(),
-                    TimeUnit.NANOSECONDS
-            );
+            boolean awaited = countDownLatch.await(toWait.toNanos(), TimeUnit.NANOSECONDS);
             if (!awaited) {
-                throw new RuntimeException("too long to wait : " + toWait.toMillis() + "ms");
+                throw new RuntimeException("too long to wait : " + toWait.toMillis() + "ms. Expected : " + expectCount + " but count was : " + (expectCount - countDownLatch.getCount()));
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

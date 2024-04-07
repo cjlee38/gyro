@@ -1,5 +1,6 @@
-package io.cjlee.gyro;
+package io.cjlee.gyro.virtualtest;
 
+import io.cjlee.gyro.Throttler;
 import io.cjlee.gyro.support.IntervaledLatch;
 import io.cjlee.gyro.support.Lap;
 import io.cjlee.gyro.support.TestUtils;
