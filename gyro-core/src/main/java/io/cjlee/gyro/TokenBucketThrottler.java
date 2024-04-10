@@ -2,10 +2,9 @@ package io.cjlee.gyro;
 
 import io.cjlee.gyro.queue.TaskQueue;
 import io.cjlee.gyro.scheduler.Scheduler;
-import io.cjlee.gyro.task.DefaultTask;
-import io.cjlee.gyro.task.FutureTask;
+import io.cjlee.gyro.task.Task;
+import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
@@ -17,6 +16,7 @@ public class TokenBucketThrottler extends AbstractThrottler implements Throttler
 
     private final int capacity;
     private final int replenishAmount;
+    private final Duration replenishDelay;
     private final AtomicInteger token; // AtomicLong can be a bottleneck in case of contention.
 
     public TokenBucketThrottler(int capacity,
@@ -28,50 +28,45 @@ public class TokenBucketThrottler extends AbstractThrottler implements Throttler
         super(replenishDelay, workers, queue, scheduler);
         this.capacity = capacity;
         this.replenishAmount = replenishAmount;
+        this.replenishDelay = replenishDelay;
         this.token = new AtomicInteger(capacity);
     }
 
     @Override
-    protected FutureTask<?> wrap(Runnable runnable) {
-        TokenTask<Void> task = new TokenTask<>(runnable);
-        task.onPrevious(token::getAndDecrement);
-        return task;
-    }
-
-    @Override
-    protected <T> FutureTask<T> wrap(Callable<T> callable) {
-        TokenTask<T> task = new TokenTask<>(callable);
-        task.onPrevious(token::getAndDecrement);
-        return task;
-    }
-
-    @Override
-    protected void onInterval() {
+    protected void executeSubmitted(long started, Duration timeout) {
         replenishToken();
-        super.onInterval();
+        int concurrency = concurrency();
+
+        for (int processed = 0; processed < concurrency && !timeout.isNegative(); processed++) {
+            Task task = queue.poll(timeout);
+            long elapsed = ticker.elapsed(started);
+
+            if (task == null) {
+                return;
+            }
+
+            token.decrementAndGet();
+            long streamRate = streamRate(concurrency, processed);
+
+            // Sleep more if task polled faster than expected.
+            if (streamRate > elapsed) {
+                ThreadUtils.nanoSleep(Duration.ofNanos(streamRate - elapsed));
+            }
+            timeout = timeout.minusNanos(ticker.elapsed(started));
+            worker.execute(task);
+        }
     }
 
     private void replenishToken() {
         token.updateAndGet(it -> Math.min(capacity, it + replenishAmount));
     }
 
-    @Override
-    protected int concurrency() {
-        return Math.min(this.capacity, token.get());
+    private int concurrency() {
+        return Math.min(capacity, token.get());
     }
 
-    private class TokenTask<T> extends DefaultTask<T> {
-        public TokenTask(Runnable runnable) {
-            super(runnable);
-        }
-
-        public TokenTask(Callable<T> callable) {
-            super(callable);
-        }
-
-        @Override
-        public boolean runnable() {
-            return token.get() > 0;
-        }
+    private long streamRate(int concurrency, int processed) {
+        int divisor = Math.min(queue.size(), concurrency);
+        return (divisor == 0 ? replenishDelay : replenishDelay.dividedBy(divisor)).toNanos() * processed;
     }
 }

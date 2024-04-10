@@ -5,4 +5,9 @@ public class NativeTicker implements Ticker {
     public long now() {
         return System.nanoTime();
     }
+
+    @Override
+    public long elapsed(long started) {
+        return System.nanoTime() - started;
+    }
 }

@@ -3,6 +3,7 @@ package io.cjlee.gyro;
 import io.cjlee.gyro.queue.TaskQueue;
 import io.cjlee.gyro.marker.Unbounded;
 import io.cjlee.gyro.scheduler.Scheduler;
+import io.cjlee.gyro.task.Task;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 
@@ -13,7 +14,11 @@ public class OneShotThrottler extends AbstractThrottler implements Throttler {
     }
 
     @Override
-    protected int concurrency() {
-        return 1;
+    protected void executeSubmitted(long started, Duration timeout) {
+        Task task = queue.poll(timeout);
+        if (task == null) {
+            return;
+        }
+        worker.execute(task);
     }
 }

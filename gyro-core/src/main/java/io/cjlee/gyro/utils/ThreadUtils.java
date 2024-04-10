@@ -1,6 +1,7 @@
 package io.cjlee.gyro.utils;
 
 import java.time.Duration;
+import java.util.concurrent.locks.LockSupport;
 
 public class ThreadUtils {
     private ThreadUtils() {
@@ -14,11 +15,12 @@ public class ThreadUtils {
         }
     }
 
+    // Is it possible to enhance to REAL nano-sleep using hrtimers ?
     public static void nanoSleep(Duration duration) {
-        // LockSupport.parkNanos();
-        long sleepUntil = System.nanoTime() + duration.toNanos();
+        long nanos = duration.toNanos();
+        long sleepUntil = System.nanoTime() + nanos;
         while (System.nanoTime() < sleepUntil) {
-            Thread.yield();
+            LockSupport.parkNanos(nanos);
         }
     }
 }

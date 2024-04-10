@@ -18,6 +18,11 @@ public abstract class DelegateQueue implements TaskQueue {
     }
 
     @Override
+    public int size() {
+        return queue.size();
+    }
+
+    @Override
     public Task peek() {
         return queue.peek();
     }

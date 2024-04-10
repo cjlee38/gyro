@@ -4,7 +4,6 @@ import io.cjlee.gyro.queue.TaskQueue;
 import io.cjlee.gyro.scheduler.Scheduler;
 import io.cjlee.gyro.task.DefaultTask;
 import io.cjlee.gyro.task.FutureTask;
-import io.cjlee.gyro.task.Task;
 import io.cjlee.gyro.ticker.Ticker;
 import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
@@ -19,12 +18,13 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractThrottler implements Throttler {
     private static final Logger log = LoggerFactory.getLogger(AbstractThrottler.class);
 
-    private final Duration interval;
-    private final ExecutorService worker;
+    protected final Duration interval;
+    protected final ExecutorService worker;
 
     /* for internal behaviors */
-    private final TaskQueue queue;
+    protected final TaskQueue queue;
     private final Scheduler scheduler;
+    protected final Ticker ticker;
 
     private volatile boolean started = false;
     private volatile boolean shutdown = false;
@@ -35,6 +35,7 @@ public abstract class AbstractThrottler implements Throttler {
         this.worker = worker;
         this.queue = queue;
         this.scheduler = scheduler;
+        this.ticker = scheduler.ticker();
     }
 
     @Override
@@ -64,46 +65,24 @@ public abstract class AbstractThrottler implements Throttler {
         }
     }
 
-    protected void onInterval() {
+    private void onInterval() {
         if (terminated && queue.isEmpty()) {
             return;
         }
-        executeSubmitted();
+        long started = ticker.now();
+        executeSubmitted(started, interval);
+        Duration nextSchedule = interval.minus(Duration.ofNanos(ticker.elapsed(started)));
+        if (nextSchedule.isNegative()) {
+            nextSchedule = Duration.ZERO;
+        }
+        scheduler.schedule(this::onInterval, nextSchedule);
+
         if (shutdown && queue.isEmpty()) {
             terminated = true;
         }
     }
 
-    private void executeSubmitted() {
-        Ticker ticker = scheduler.ticker();
-        long concurrency = concurrency();
-        boolean nextScheduled = false;
-
-        long started = ticker.now();
-        Duration timeout = this.interval;
-
-        while (concurrency > 0) {
-            Task task = queue.poll(timeout);
-            if (task == null) {
-                break;
-            }
-            timeout = timeout.minusNanos(ticker.now() - started);
-            // To ensure interval of execution, add a hook to schedule next `onInterval`
-            if (!nextScheduled) {
-                Duration nextDuration = timeout;
-                task.onPrevious(() -> scheduler.schedule(this::onInterval, nextDuration));
-                nextScheduled = true;
-            }
-            worker.execute(task);
-            concurrency--;
-        }
-        // If first is false, it means hook for next schedule is not registered.
-        if (!nextScheduled) {
-            scheduler.schedule(this::onInterval, this.interval);
-        }
-    }
-
-    protected abstract int concurrency();
+    protected abstract void executeSubmitted(long started, Duration timeout);
 
     private <T> Future<T> submit0(FutureTask<T> task) {
         if (shutdown) {

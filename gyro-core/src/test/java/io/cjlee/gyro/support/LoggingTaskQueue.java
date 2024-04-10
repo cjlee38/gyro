@@ -50,4 +50,9 @@ public class LoggingTaskQueue implements TaskQueue {
         queue.drainTo(dest);
         log.debug("LoggingTaskQueue.drainTo : " + dest);
     }
+
+    @Override
+    public int size() {
+        return queue.size();
+    }
 }

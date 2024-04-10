@@ -69,8 +69,4 @@ public class Throttlers {
                                         Scheduler scheduler) {
         return new FixedWindowThrottler(windowSize, interval, worker, queue, scheduler);
     }
-
-    public static ThrottlerCustomizer customize() {
-        return new ThrottlerCustomizer();
-    }
 }

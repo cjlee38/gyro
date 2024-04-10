@@ -12,6 +12,11 @@ public class VirtualTicker implements Ticker {
         return tick.get();
     }
 
+    @Override
+    public long elapsed(long started) {
+        return tick.get() - started;
+    }
+
     public long advance(Duration duration) {
         return tick.addAndGet(duration.toNanos());
     }

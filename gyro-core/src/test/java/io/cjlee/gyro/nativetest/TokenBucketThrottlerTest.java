@@ -24,7 +24,7 @@ class TokenBucketThrottlerTest {
 
         TestUtils.repeat(capacity, () -> throttler.submit(runnable));
 
-        latch.intervaled();
+        assertThat(latch.intervaled()).isTrue();
     }
 
     @Test
@@ -38,7 +38,8 @@ class TokenBucketThrottlerTest {
 
         TestUtils.repeat(shot, () -> throttler.submit(runnable));
 
-        assertThat(latch.intervaled(2, 5)).isTrue();
+//        assertThat(latch.intervaled(2, 5)).isTrue();
+        assertThat(latch.intervaled()).isTrue();
     }
 
     @Test

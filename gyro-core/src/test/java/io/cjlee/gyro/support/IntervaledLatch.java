@@ -45,7 +45,7 @@ public class IntervaledLatch {
         this.instants.add(lap);
 
         countDownLatch.countDown();
-        log.debug("lap - ({}, {})", expectCount - countDownLatch.getCount(), lap);
+        log.debug("lap - ({}, {})", expectCount - countDownLatch.getCount() - 1, lap);
     }
 
     public boolean intervaled() {

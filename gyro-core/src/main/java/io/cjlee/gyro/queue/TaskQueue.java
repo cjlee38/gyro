@@ -50,4 +50,6 @@ public interface TaskQueue {
      * @param dest the list to which tasks are to be transferred.
      */
     void drainTo(List<Runnable> dest);
+
+    int size();
 }
