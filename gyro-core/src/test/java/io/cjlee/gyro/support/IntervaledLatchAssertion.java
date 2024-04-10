@@ -62,11 +62,11 @@ public class IntervaledLatchAssertion {
     }
 
     public void end() {
-        assertThat(intervaledLatch.intervaled()).isTrue();
+        assertThat(intervaledLatch.isIntervaled()).isTrue();
     }
 
     public void endOn(int start, int end) {
-        assertThat(intervaledLatch.intervaled(start, end)).isTrue();
+        assertThat(intervaledLatch.isIntervaled(start, end)).isTrue();
     }
 
     private void logOnFailure(Runnable runnable) {

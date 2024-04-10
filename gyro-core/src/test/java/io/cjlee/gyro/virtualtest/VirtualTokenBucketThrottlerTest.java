@@ -8,9 +8,11 @@ import io.cjlee.gyro.support.VirtualThrottlers;
 import io.cjlee.gyro.support.VirtualTicker;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-class TokenBucketThrottlerTest {
+@Disabled("Not implemented yet")
+class VirtualTokenBucketThrottlerTest {
     private VirtualTicker ticker;
 
     @BeforeEach

@@ -66,7 +66,6 @@ public class TokenBucketThrottler extends AbstractThrottler implements Throttler
     }
 
     private long streamRate(int concurrency, int processed) {
-        int divisor = Math.min(queue.size(), concurrency);
-        return (divisor == 0 ? replenishDelay : replenishDelay.dividedBy(divisor)).toNanos() * processed;
+        return (concurrency == 0 ? replenishDelay : replenishDelay.dividedBy(concurrency)).toNanos() * processed;
     }
 }

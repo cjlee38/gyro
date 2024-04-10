@@ -32,7 +32,7 @@ public class TestUtils {
                         long executionTime = System.nanoTime() - startTime;
                         long delayForNextRun = interval.toNanos() - executionTime;
                         if (delayForNextRun < 0) {
-                            // I assume that the given runnable is `throttler.submit`,
+                            // Assume that the given runnable is `throttler.submit`,
                             // but nevertheless if the execution took longer than the interval, run immediately.
                             delayForNextRun = 0;
                         }
@@ -40,7 +40,7 @@ public class TestUtils {
                     }
                 }
             }
-        }, interval.toNanos(), TimeUnit.NANOSECONDS);
+        }, 0, TimeUnit.NANOSECONDS);
     }
 
     public static void assertSoftly(Runnable runnable) {

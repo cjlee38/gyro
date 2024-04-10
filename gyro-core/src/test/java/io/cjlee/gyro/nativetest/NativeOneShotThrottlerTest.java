@@ -6,6 +6,7 @@ import io.cjlee.gyro.Throttler;
 import io.cjlee.gyro.Throttlers;
 import io.cjlee.gyro.support.IntervaledLatch;
 import io.cjlee.gyro.support.TestUtils;
+import io.cjlee.gyro.support.TimestampLatch;
 import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -13,7 +14,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
-class OneShotThrottlerTest {
+class NativeOneShotThrottlerTest {
     @Test
     void immediate() {
         int count = 3;
@@ -24,7 +25,7 @@ class OneShotThrottlerTest {
 
         TestUtils.repeat(count, () -> throttler.submit(command));
 
-        assertThat(intervaledLatch.intervaled()).isTrue();
+        assertThat(intervaledLatch.isIntervaled()).isTrue();
     }
 
     @Test
@@ -38,7 +39,7 @@ class OneShotThrottlerTest {
 
         TestUtils.repeat(count, () -> throttler.submit(command));
 
-        assertThat(intervaledLatch.intervaled()).isTrue();
+        assertThat(intervaledLatch.isIntervaled()).isTrue();
     }
 
     @Test
@@ -56,9 +57,9 @@ class OneShotThrottlerTest {
 
         TestUtils.repeat(count, () -> throttler.submit(command));
 
-        assertThat(startIntervals.intervaled()).isTrue();
+        assertThat(startIntervals.isIntervaled()).isTrue();
         // completeIntervals could not be properly intervaled because of context-switch
-        TestUtils.assertSoftly(() -> assertThat(completeIntervals.intervaled()).isTrue());
+        TestUtils.assertSoftly(() -> assertThat(completeIntervals.isIntervaled()).isTrue());
     }
 
     @Test
@@ -72,14 +73,14 @@ class OneShotThrottlerTest {
         Thread.sleep(1500);
         throttler.submit(command);
 
-        assertThat(intervaledLatch.intervaled()).isTrue();
+        assertThat(intervaledLatch.isIntervaled()).isTrue();
     }
 
     @Test
     void shutdown() {
         int count = 3;
         Duration interval = Duration.ofMillis(1000L);
-        IntervaledLatch intervaledLatch = new IntervaledLatch(interval, count, null);
+        TimestampLatch intervaledLatch = new TimestampLatch(count, Duration.ofMillis(50), null);
 
         Throttler throttler = Throttlers.oneShot(interval);
         TestUtils.repeat(count, () -> throttler.submit(() -> {
@@ -88,9 +89,9 @@ class OneShotThrottlerTest {
         }));
 
         ThreadUtils.trySleep(Duration.ofMillis(100)); // to ensure all tasks to be submitted
-        throttler.shutdown(interval.multipliedBy(count));
+        throttler.shutdown(interval.multipliedBy(count)); // 3000ms
 
-        assertThat(intervaledLatch.intervaled()).isTrue();
+        assertThat(intervaledLatch.isMatched(500, 1500, 2500)).isTrue();
     }
 
     @Test

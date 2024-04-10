@@ -4,27 +4,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.cjlee.gyro.Throttler;
 import io.cjlee.gyro.Throttlers;
-import io.cjlee.gyro.support.IntervaledLatch;
 import io.cjlee.gyro.support.TestUtils;
+import io.cjlee.gyro.support.TimestampLatch;
+import io.cjlee.gyro.support.WarmUpTestBase;
 import io.cjlee.gyro.utils.ThreadUtils;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class TokenBucketThrottlerTest {
-    private static final Logger log = LoggerFactory.getLogger(TokenBucketThrottlerTest.class);
+class NativeTokenBucketThrottlerTest extends WarmUpTestBase {
+    private static final Logger log = LoggerFactory.getLogger(NativeTokenBucketThrottlerTest.class);
 
     @Test
     void immediate() {
+
         int capacity = 3;
         Throttler throttler = Throttlers.tokenBucket(capacity, 1, Duration.ofSeconds(1));
-        IntervaledLatch latch = new IntervaledLatch(Duration.ZERO, capacity, null);
+        TimestampLatch latch = new TimestampLatch(3, Duration.ofMillis(50), null);
         Runnable runnable = latch::lap;
 
         TestUtils.repeat(capacity, () -> throttler.submit(runnable));
 
-        assertThat(latch.intervaled()).isTrue();
+        assertThat(latch.isMatched(0, 333, 666)).isTrue();
     }
 
     @Test
@@ -32,14 +34,13 @@ class TokenBucketThrottlerTest {
         int capacity = 3;
         int shot = 6;
         Duration interval = Duration.ofSeconds(1);
-        IntervaledLatch latch = new IntervaledLatch(interval, shot, null);
+        TimestampLatch latch = new TimestampLatch(6, Duration.ofMillis(50), null);
         Throttler throttler = Throttlers.tokenBucket(capacity, 1, interval);
         Runnable runnable = latch::lap;
 
         TestUtils.repeat(shot, () -> throttler.submit(runnable));
 
-//        assertThat(latch.intervaled(2, 5)).isTrue();
-        assertThat(latch.intervaled()).isTrue();
+        assertThat(latch.isMatched(0, 333, 666, 1000, 2000, 3000)).isTrue();
     }
 
     @Test
@@ -49,15 +50,14 @@ class TokenBucketThrottlerTest {
         int secondShot = 3;
         Duration interval = Duration.ofSeconds(1);
         Throttler throttler = Throttlers.tokenBucket(capacity, 1, interval);
-        IntervaledLatch latch = new IntervaledLatch(interval, firstShot + secondShot, null);
+        TimestampLatch latch = new TimestampLatch(firstShot + secondShot, Duration.ofMillis(50), null);
         Runnable runnable = latch::lap;
 
         TestUtils.repeat(firstShot, () -> throttler.submit(runnable));
-        ThreadUtils.trySleep(Duration.ofSeconds(2));
+        ThreadUtils.trySleep(Duration.ofMillis(2100)); // wait for 100ms more, to ensure that interval has been passed twice.
         TestUtils.repeat(secondShot, () -> throttler.submit(runnable));
 
-        assertThat(latch.intervaled(2, 3)).isTrue();
-        assertThat(latch.intervaled(4, 5)).isTrue();
+        assertThat(latch.isMatched(0, 333, 666, 2100, 2500, 3000)).isTrue();
     }
 
     @Test
@@ -65,11 +65,11 @@ class TokenBucketThrottlerTest {
         int shot = 6;
         Duration interval = Duration.ofSeconds(1);
         Throttler throttler = Throttlers.tokenBucket(3, 1, interval);
-        IntervaledLatch latch = new IntervaledLatch(interval, shot, null);
+        TimestampLatch latch = new TimestampLatch(shot, Duration.ofMillis(50), null);
         Runnable runnable = latch::lap;
 
         TestUtils.repeat(shot, interval, () -> throttler.submit(runnable));
 
-        assertThat(latch.intervaled()).isTrue();
+        assertThat(latch.isMatched(0, 1000, 2000, 3000, 4000, 5000)).isTrue();
     }
 }

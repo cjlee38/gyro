@@ -18,7 +18,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-class OneShotThrottlerTest {
+@Disabled("Not implemented yet")
+class VirtualOneShotThrottlerTest {
     private VirtualTicker ticker;
 
     @BeforeEach

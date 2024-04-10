@@ -16,17 +16,14 @@ public class Lap {
         return new Lap(TimeUnit.MILLISECONDS.toNanos(millis));
     }
 
-    public Duration duration() {
-        return Duration.ofNanos(tick);
-    }
-
     public Instant instant() {
-        Duration duration = duration();
+        Duration duration = Duration.ofNanos(tick);
         return Instant.ofEpochSecond(duration.getSeconds(), duration.getNano());
     }
 
     @Override
     public String toString() {
+//        return instant().toString();
         Duration duration = Duration.ofNanos(tick);
         return "Lap(%dms)".formatted(duration.toMillis());
     }
@@ -46,5 +43,9 @@ public class Lap {
     @Override
     public int hashCode() {
         return Objects.hash(tick);
+    }
+
+    public boolean isMatched(long tick, Duration toleration) {
+        return Math.abs(tick - this.tick) < toleration.toNanos();
     }
 }
