@@ -20,7 +20,7 @@ public class MpscBoundedTaskQueue extends DelegateQueue implements BoundedTaskQu
         Queue<Task> queue;
         try {
             queue = new MpscArrayQueue<>(capacity);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             queue = new MpscAtomicArrayQueue<>(capacity);
         }
         return queue;

@@ -6,9 +6,8 @@ import io.cjlee.gyro.task.Task;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 
-public class FixedWindowThrottler extends AbstractThrottler implements BoundedThrottler {
+public class FixedWindowThrottler extends AbstractThrottler implements Throttler {
     private final int windowSize;
-    private Runnable onDiscard;
 
     public FixedWindowThrottler(int windowSize,
                                 Duration interval,
@@ -31,15 +30,5 @@ public class FixedWindowThrottler extends AbstractThrottler implements BoundedTh
             timeout = timeout.minusNanos(ticker.elapsed(started));
             worker.execute(task);
         }
-    }
-
-    @Override
-    protected Runnable onDiscard() {
-        return this.onDiscard;
-    }
-
-    @Override
-    public void setOnDiscard(Runnable onDiscard) {
-        this.onDiscard = onDiscard;
     }
 }

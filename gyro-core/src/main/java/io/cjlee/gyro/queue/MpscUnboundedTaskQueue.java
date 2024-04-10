@@ -20,7 +20,7 @@ public class MpscUnboundedTaskQueue extends DelegateQueue implements UnboundedTa
         Queue<Task> queue;
         try {
             queue = new MpscUnboundedArrayQueue<>(capacity);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             queue = new MpscUnboundedAtomicArrayQueue<>(capacity);
         }
         return queue;
